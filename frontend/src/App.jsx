@@ -11,6 +11,8 @@ import AboutPage from './pages/AboutPage';
 import StrengthDetailPage from './pages/StrengthDetailPage';
 import CardioDetailPage from './pages/CardioDetailPage';
 import WorkoutModal from './components/WorkoutModal';
+import LoginPage from './pages/LoginPage';
+import SignUp from './pages/SignUpPage';
 
 const App = () => {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
@@ -162,7 +164,9 @@ const App = () => {
         <Navigation {...appState} />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Routes>
-            <Route path="/" element={<HomePage {...appState} />} />
+            <Route path="/" element={<LoginPage {...appState} />} />
+            <Route path="/signup" element={<SignUp {...appState} />} />
+            <Route path="/home" element={<HomePage {...appState} />} />
             <Route path="/strength" element={<StrengthListPage {...appState} />} />
             <Route path="/cardio" element={<CardioListPage {...appState} />} />
             <Route path="/dashboard" element={<DashboardPage {...appState} />} />
