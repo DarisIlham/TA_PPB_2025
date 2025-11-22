@@ -1,57 +1,40 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import {
-  Home,
-  User,
-  Info,
   Dumbbell,
-  Heart,
-  BarChart3,
-  Target,
   Plus,
   Search,
-  Filter,
-  Calendar,
+  ChevronDown,
   TrendingUp,
   Award,
-  Clock,
-  Activity,
-  ChevronRight,
-  ChevronDown,
-  Edit,
-  Trash2,
-  Save,
-  X,
-  Download,
+  Calendar,
   SlidersHorizontal,
+  Loader,
+  AlertCircle,
+  RefreshCw,
+  ArrowLeft, 
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  
-} from "recharts";
-// import { Link } from "react-router-dom";
-// import { useWorkouts } from "../hooks/useWorkouts";
-// import { useModal } from "../hooks/useModal";
+import { useStrength } from "../hooks/useStrength";
 
 const StrengthListPage = ({ 
-  strengthWorkouts, 
   setModalType, 
-  setShowModal,
-  setSelectedWorkoutId,
-  setCurrentPage 
+  setShowModal
 }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [filterType, setFilterType] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const {
+    strengthWorkouts,
+    loading,
+    error,
+    stats,
+    personalRecords,
+    refreshData,
+    deleteStrengthWorkout
+  } = useStrength();
 
   // Filter and sort workouts
   const filteredWorkouts = strengthWorkouts
@@ -75,48 +58,105 @@ const StrengthListPage = ({
         case 'duration':
           return b.duration - a.duration;
         case 'rpe':
-          return b.rpe - a.rpe;
+          return (b.rpe || 0) - (a.rpe || 0);
         default:
           return 0;
       }
     });
 
-  // Calculate statistics
-  const totalVolume = strengthWorkouts.reduce((sum, w) => sum + w.totalVolume, 0);
-  const avgVolume = totalVolume / strengthWorkouts.length || 0;
-  const maxVolume = Math.max(...strengthWorkouts.map(w => w.totalVolume));
-  const totalDuration = strengthWorkouts.reduce((sum, w) => sum + w.duration, 0);
-
-  // Get recent 1RM estimates
-  const get1RMEstimate = (exercise) => {
-    let maxEstimate = 0;
-    strengthWorkouts.forEach(workout => {
-      workout.exercises.forEach(ex => {
-        if (ex.name === exercise) {
-          ex.sets.forEach(set => {
-            const estimate = set.weight * (1 + set.reps / 30); // Epley formula
-            if (estimate > maxEstimate) maxEstimate = estimate;
-          });
-        }
-      });
-    });
-    return Math.round(maxEstimate);
+  // Handle delete workout
+   const handleDeleteWorkout = async (workoutId, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this workout?')) {
+      try {
+        await deleteStrengthWorkout(workoutId);
+      } catch (err) {
+        alert('Failed to delete workout: ' + err.message);
+      }
+    }
   };
 
-  const benchPress1RM = get1RMEstimate('Bench Press');
-  const squat1RM = get1RMEstimate('Squat');
-  const deadlift1RM = get1RMEstimate('Deadlift');
+  // Handle refresh data
+   const handleRefresh = async () => {
+    try {
+      await refreshData();
+    } catch (err) {
+      console.error('Failed to refresh data:', err);
+    }
+  };
+
+  // Navigate to workout detail
+  const handleViewWorkout = (workoutId) => {
+    navigate(`/strength-detail/${workoutId}`);
+  };
+
+  // Navigate back to home
+  const handleBackToHome = () => {
+    navigate('/home');
+  };
+
+  if (loading && strengthWorkouts.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <Loader className="w-8 h-8 animate-spin text-indigo-600" />
+        <span className="ml-2 text-gray-600">Loading workouts...</span>
+      </div>
+    );
+  }
+
+    if (error && strengthWorkouts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 text-red-600">
+        <AlertCircle className="w-8 h-8 mb-2" />
+        <p>Error loading workouts: {error}</p>
+        <div className="flex space-x-2 mt-4">
+          <button 
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Try Again
+          </button>
+          <button 
+            onClick={handleBackToHome}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
+       {/* Header dengan back button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-            <Dumbbell className="w-8 h-8 mr-3 text-indigo-600" />
-            Strength Training Log
-          </h1>
-          <p className="text-gray-600 mt-1">Track and analyze your strength training progress</p>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/home"
+            className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors"
+            title="Back to Home"
+          >
+            <ArrowLeft className="w-5 h-5 mr-1" />
+            <span className="text-sm font-medium">Home</span>
+          </Link>
+          <div className="border-l border-gray-300 h-6"></div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+              <Dumbbell className="w-8 h-8 mr-3 text-indigo-600" />
+              Strength Training Log
+            </h1>
+            <p className="text-gray-600 mt-1">Track and analyze your strength training progress</p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
         <button
           onClick={() => { setModalType('strength'); setShowModal(true); }}
@@ -145,7 +185,9 @@ const StrengthListPage = ({
             <TrendingUp className="w-4 h-4 opacity-60" />
           </div>
           <p className="text-sm opacity-90 font-medium">Total Volume</p>
-          <p className="text-3xl font-bold mt-1">{(totalVolume / 1000).toFixed(1)}k</p>
+          <p className="text-3xl font-bold mt-1">
+            {stats ? `${(stats.summary?.totalVolume / 1000).toFixed(1)}k` : '0k'}
+          </p>
           <p className="text-xs opacity-75 mt-1">kg lifted total</p>
         </div>
 
@@ -155,7 +197,9 @@ const StrengthListPage = ({
             <TrendingUp className="w-4 h-4 opacity-60" />
           </div>
           <p className="text-sm opacity-90 font-medium">Avg Volume</p>
-          <p className="text-3xl font-bold mt-1">{(avgVolume / 1000).toFixed(1)}k</p>
+          <p className="text-3xl font-bold mt-1">
+            {stats ? `${(stats.summary?.totalVolume / (strengthWorkouts.length * 1000) || 0).toFixed(1)}k` : '0k'}
+          </p>
           <p className="text-xs opacity-75 mt-1">kg per session</p>
         </div>
 
@@ -165,7 +209,9 @@ const StrengthListPage = ({
             <TrendingUp className="w-4 h-4 opacity-60" />
           </div>
           <p className="text-sm opacity-90 font-medium">Total Time</p>
-          <p className="text-3xl font-bold mt-1">{(totalDuration / 60).toFixed(1)}h</p>
+          <p className="text-3xl font-bold mt-1">
+            {stats ? `${(stats.summary?.totalDuration / 60).toFixed(1)}h` : '0h'}
+          </p>
           <p className="text-xs opacity-75 mt-1">training hours</p>
         </div>
       </div>
@@ -174,23 +220,29 @@ const StrengthListPage = ({
       <div className="bg-white rounded-xl shadow-md p-6">
         <h2 className="text-xl font-bold mb-4 flex items-center text-gray-800">
           <Award className="w-5 h-5 mr-2 text-yellow-500" />
-          Estimated 1RM (One Rep Max)
+          Personal Records
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border-2 border-yellow-200">
             <p className="text-sm text-gray-600 font-medium mb-1">Bench Press</p>
-            <p className="text-3xl font-bold text-yellow-700">{benchPress1RM} kg</p>
-            <p className="text-xs text-gray-500 mt-1">Epley formula estimate</p>
+            <p className="text-3xl font-bold text-yellow-700">
+              {personalRecords?.maxWeight?.['Bench Press']?.weight || 'N/A'} kg
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Max weight recorded</p>
           </div>
           <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border-2 border-yellow-200">
             <p className="text-sm text-gray-600 font-medium mb-1">Squat</p>
-            <p className="text-3xl font-bold text-yellow-700">{squat1RM} kg</p>
-            <p className="text-xs text-gray-500 mt-1">Epley formula estimate</p>
+            <p className="text-3xl font-bold text-yellow-700">
+              {personalRecords?.maxWeight?.['Squat']?.weight || 'N/A'} kg
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Max weight recorded</p>
           </div>
           <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border-2 border-yellow-200">
             <p className="text-sm text-gray-600 font-medium mb-1">Deadlift</p>
-            <p className="text-3xl font-bold text-yellow-700">{deadlift1RM} kg</p>
-            <p className="text-xs text-gray-500 mt-1">Epley formula estimate</p>
+            <p className="text-3xl font-bold text-yellow-700">
+              {personalRecords?.maxWeight?.['Deadlift']?.weight || 'N/A'} kg
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Max weight recorded</p>
           </div>
         </div>
       </div>
@@ -306,20 +358,17 @@ const StrengthListPage = ({
                   RPE
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Action
+                  Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredWorkouts.length > 0 ? (
-                filteredWorkouts.map((workout, index) => (
+                filteredWorkouts.map((workout) => (
                   <tr 
-                    key={workout.id} 
+                    key={workout.strength_id} 
                     className="hover:bg-indigo-50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setSelectedWorkoutId(workout.id);
-                      setCurrentPage('strength-detail');
-                    }}
+                    onClick={() => handleViewWorkout(workout.strength_id)}
                   >
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">
                       {new Date(workout.date).toLocaleDateString('en-US', { 
@@ -353,20 +402,27 @@ const StrengthListPage = ({
                         workout.rpe >= 7 ? 'bg-orange-100 text-orange-700' :
                         'bg-green-100 text-green-700'
                       }`}>
-                        {workout.rpe}/10
+                        {workout.rpe || 'N/A'}/10
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedWorkoutId(workout.id);
-                          setCurrentPage('strength-detail');
-                        }}
-                        className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewWorkout(workout.strength_id);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteWorkout(workout.strength_id, e)}
+                          className="text-red-600 hover:text-red-800 font-semibold hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

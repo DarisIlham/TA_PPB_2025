@@ -37,7 +37,7 @@ const LoginPage = () => {
 
       if (res.ok) {
         // Redirect after success
-        navigate("/view");
+        navigate("/login");
       } else {
         const errorData = await res.json();
         alert("Sign up failed: " + errorData.message);

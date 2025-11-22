@@ -1,3 +1,4 @@
+// src/utils/api.js
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
@@ -33,9 +34,3 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 
   return response.json();
 };
-
-// export const handleLogout = () => {
-//   localStorage.removeItem("token");
-//   localStorage.removeItem("user");
-//   window.location.href = "/login";
-

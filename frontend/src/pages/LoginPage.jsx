@@ -1,6 +1,6 @@
 import React, { useEffect,useState } from "react";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import back from "../img/return.png";
+
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
@@ -39,18 +39,14 @@ const LoginPage = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      navigate("/view");
+      navigate("/home");
     } catch (error) {
       alert("Error connecting to server: " + error.message);
     }
   };
   
 
-  const backSign = (e) => {
-    e.preventDefault();
-    navigate("/");
-  };
-
+ 
   return (
     <div className="relative w-full h-screen"> 
       {/* Form wrapper */}
@@ -58,9 +54,9 @@ const LoginPage = () => {
         <div className="text-[16px] leading-[18px]">
           {/* Header */}
           <div className="text-[18px] mt-[44px] mb-[56px] justify-center grid place-items-center w-[375px] h-[64px] text-center font-semibold">
-            <button className="absolute left-[20px]" onClick={backSign}>
-              <img src={back} alt="Back" className="w-[24px] h-[24px]" />
-            </button>
+            
+            
+            
             <p className="font-semibold text-[18px]">Login</p>
           </div>
 
