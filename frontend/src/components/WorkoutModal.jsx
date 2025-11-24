@@ -1,47 +1,96 @@
 // Modal Component for Adding Workouts
-import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { X, Plus, Trash2 } from "lucide-react";
 
-const WorkoutModal = ({ 
-  showModal, 
-  setShowModal, 
+const WorkoutModal = ({
+  showModal,
+  setShowModal,
   modalType,
   selectedWorkoutId,
-  setSelectedWorkoutId 
+  setSelectedWorkoutId,
+  editingWorkout = null, // Tambah prop untuk data edit
+  onSuccess = () => {}, // Callback ketika edit berhasil
+  onClose = () => {}, // Callback ketika modal ditutup
 }) => {
+  useEffect(() => {
+    if (editingWorkout && modalType === "strength") {
+      setStrengthForm({
+        name: editingWorkout.name || "",
+        date: editingWorkout.date || new Date().toISOString().split("T")[0],
+        duration: editingWorkout.duration?.toString() || "",
+        rpe: editingWorkout.rpe?.toString() || "",
+        notes: editingWorkout.notes || "",
+        exercises: editingWorkout.exercises?.map((exercise) => ({
+          name: exercise.name || "",
+          sets: exercise.sets?.map((set) => ({
+            weight: set.weight?.toString() || "",
+            reps: set.reps?.toString() || "",
+          })) || [
+            {
+              weight: "",
+              reps: "",
+            },
+          ],
+        })) || [
+          {
+            name: "",
+            sets: [
+              {
+                weight: "",
+                reps: "",
+              },
+            ],
+          },
+        ],
+      });
+    }
+  }, [editingWorkout, modalType]);
+
+  useEffect(() => {
+  if (editingWorkout && modalType === 'cardio') {
+    setCardioForm({
+      activityType: editingWorkout.activityType || 'Running',
+      date: editingWorkout.date || new Date().toISOString().split('T')[0],
+      distance: editingWorkout.distance?.toString() || '',
+      duration: editingWorkout.duration?.toString() || '',
+      location: editingWorkout.location || '',
+      notes: editingWorkout.notes || ''
+    });
+  }
+}, [editingWorkout, modalType]);
   // State untuk form input strength dengan exercises
   const [strengthForm, setStrengthForm] = useState({
-    name: '',
-    date: new Date().toISOString().split('T')[0],
-    duration: '',
-    rpe: '',
-    notes: '',
+    name: "",
+    date: new Date().toISOString().split("T")[0],
+    duration: "",
+    rpe: "",
+    notes: "",
     exercises: [
       {
-        name: '',
+        name: "",
         sets: [
           {
-            weight: '',
-            reps: ''
-          }
-        ]
-      }
-    ]
+            weight: "",
+            reps: "",
+          },
+        ],
+      },
+    ],
   });
 
   // State untuk cardio form
   const [cardioForm, setCardioForm] = useState({
-    activityType: 'Running',
-    date: new Date().toISOString().split('T')[0],
-    distance: '',
-    duration: '',
-    location: '',
-    notes: ''
+    activityType: "Running",
+    date: new Date().toISOString().split("T")[0],
+    distance: "",
+    duration: "",
+    location: "",
+    notes: "",
   });
 
   // State untuk loading dan error
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Calculate total volume whenever exercises change
   const calculateTotalVolume = () => {
@@ -49,7 +98,7 @@ const WorkoutModal = ({
       const exerciseVolume = exercise.sets.reduce((exerciseTotal, set) => {
         const weight = parseFloat(set.weight) || 0;
         const reps = parseFloat(set.reps) || 0;
-        return exerciseTotal + (weight * reps);
+        return exerciseTotal + weight * reps;
       }, 0);
       return total + exerciseVolume;
     }, 0);
@@ -60,50 +109,54 @@ const WorkoutModal = ({
   // Reset form ketika modal ditutup/dibuka
   const handleClose = () => {
     setShowModal(false);
-    setError('');
-    setStrengthForm({
-      name: '',
-      date: new Date().toISOString().split('T')[0],
-      duration: '',
-      rpe: '',
-      notes: '',
-      exercises: [
-        {
-          name: '',
-          sets: [
-            {
-              weight: '',
-              reps: ''
-            }
-          ]
-        }
-      ]
-    });
-    setCardioForm({
-      activityType: 'Running',
-      date: new Date().toISOString().split('T')[0],
-      distance: '',
-      duration: '',
-      location: '',
-      notes: ''
-    });
+    onClose();
+    setError("");
+    // Reset form hanya jika tidak dalam mode edit
+    if (!editingWorkout) {
+      setStrengthForm({
+        name: "",
+        date: new Date().toISOString().split("T")[0],
+        duration: "",
+        rpe: "",
+        notes: "",
+        exercises: [
+          {
+            name: "",
+            sets: [
+              {
+                weight: "",
+                reps: "",
+              },
+            ],
+          },
+        ],
+      });
+      setCardioForm({
+        activityType: "Running",
+        date: new Date().toISOString().split("T")[0],
+        distance: "",
+        duration: "",
+        location: "",
+        notes: "",
+      });
+    }
   };
 
   if (!showModal) return null;
 
   // Handle input change untuk strength form utama
   const handleStrengthChange = (e) => {
-    setStrengthForm({ 
-      ...strengthForm, 
-      [e.target.name]: e.target.value 
+    setStrengthForm({
+      ...strengthForm,
+      [e.target.name]: e.target.value,
     });
   };
 
   // Handle input change untuk cardio
   const handleCardioChange = (e) => {
-    setCardioForm({ 
-      ...cardioForm, 
-      [e.target.name]: e.target.value 
+    setCardioForm({
+      ...cardioForm,
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -113,7 +166,7 @@ const WorkoutModal = ({
     updatedExercises[exerciseIndex].name = value;
     setStrengthForm({
       ...strengthForm,
-      exercises: updatedExercises
+      exercises: updatedExercises,
     });
   };
 
@@ -123,7 +176,7 @@ const WorkoutModal = ({
     updatedExercises[exerciseIndex].sets[setIndex][field] = value;
     setStrengthForm({
       ...strengthForm,
-      exercises: updatedExercises
+      exercises: updatedExercises,
     });
   };
 
@@ -134,25 +187,27 @@ const WorkoutModal = ({
       exercises: [
         ...strengthForm.exercises,
         {
-          name: '',
+          name: "",
           sets: [
             {
-              weight: '',
-              reps: ''
-            }
-          ]
-        }
-      ]
+              weight: "",
+              reps: "",
+            },
+          ],
+        },
+      ],
     });
   };
 
   // Remove exercise
   const removeExercise = (exerciseIndex) => {
     if (strengthForm.exercises.length > 1) {
-      const updatedExercises = strengthForm.exercises.filter((_, index) => index !== exerciseIndex);
+      const updatedExercises = strengthForm.exercises.filter(
+        (_, index) => index !== exerciseIndex
+      );
       setStrengthForm({
         ...strengthForm,
-        exercises: updatedExercises
+        exercises: updatedExercises,
       });
     }
   };
@@ -161,12 +216,12 @@ const WorkoutModal = ({
   const addSet = (exerciseIndex) => {
     const updatedExercises = [...strengthForm.exercises];
     updatedExercises[exerciseIndex].sets.push({
-      weight: '',
-      reps: ''
+      weight: "",
+      reps: "",
     });
     setStrengthForm({
       ...strengthForm,
-      exercises: updatedExercises
+      exercises: updatedExercises,
     });
   };
 
@@ -174,26 +229,28 @@ const WorkoutModal = ({
   const removeSet = (exerciseIndex, setIndex) => {
     const updatedExercises = [...strengthForm.exercises];
     if (updatedExercises[exerciseIndex].sets.length > 1) {
-      updatedExercises[exerciseIndex].sets = updatedExercises[exerciseIndex].sets.filter((_, index) => index !== setIndex);
+      updatedExercises[exerciseIndex].sets = updatedExercises[
+        exerciseIndex
+      ].sets.filter((_, index) => index !== setIndex);
       setStrengthForm({
         ...strengthForm,
-        exercises: updatedExercises
+        exercises: updatedExercises,
       });
     }
   };
 
   // Validasi form
   const validateForm = () => {
-    if (modalType === 'strength') {
+    if (modalType === "strength") {
       if (!strengthForm.name.trim()) {
-        setError('Workout name is required');
+        setError("Workout name is required");
         return false;
       }
       if (!strengthForm.duration || strengthForm.duration <= 0) {
-        setError('Duration must be greater than 0');
+        setError("Duration must be greater than 0");
         return false;
       }
-      
+
       // Validasi exercises
       for (let i = 0; i < strengthForm.exercises.length; i++) {
         const exercise = strengthForm.exercises[i];
@@ -201,26 +258,32 @@ const WorkoutModal = ({
           setError(`Exercise ${i + 1} name is required`);
           return false;
         }
-        
+
         for (let j = 0; j < exercise.sets.length; j++) {
           const set = exercise.sets[j];
           if (!set.weight || set.weight <= 0) {
-            setError(`Set ${j + 1} in "${exercise.name}" must have weight greater than 0`);
+            setError(
+              `Set ${j + 1} in "${
+                exercise.name
+              }" must have weight greater than 0`
+            );
             return false;
           }
           if (!set.reps || set.reps <= 0) {
-            setError(`Set ${j + 1} in "${exercise.name}" must have reps greater than 0`);
+            setError(
+              `Set ${j + 1} in "${exercise.name}" must have reps greater than 0`
+            );
             return false;
           }
         }
       }
     } else {
       if (!cardioForm.distance || cardioForm.distance <= 0) {
-        setError('Distance must be greater than 0');
+        setError("Distance must be greater than 0");
         return false;
       }
       if (!cardioForm.duration || cardioForm.duration <= 0) {
-        setError('Duration must be greater than 0');
+        setError("Duration must be greater than 0");
         return false;
       }
     }
@@ -232,29 +295,37 @@ const WorkoutModal = ({
     if (!validateForm()) return;
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        throw new Error('No authentication token found');
+        throw new Error("No authentication token found");
       }
 
-      let endpoint = '';
+      let endpoint = "";
+      let method = "POST";
       let body = {};
 
-      if (modalType === 'strength') {
+      // Jika dalam mode edit, gunakan method PUT dan endpoint yang sesuai
+      if (editingWorkout && selectedWorkoutId) {
+        method = "PUT";
+        endpoint = `/api/strength/${selectedWorkoutId}`;
+      } else {
+        endpoint = "/api/strength";
+      }
+
+      if (modalType === "strength") {
         // Format exercises data dengan tipe number yang benar
-        const formattedExercises = strengthForm.exercises.map(exercise => ({
+        const formattedExercises = strengthForm.exercises.map((exercise) => ({
           name: exercise.name,
-          sets: exercise.sets.map(set => ({
+          sets: exercise.sets.map((set) => ({
             weight: parseFloat(set.weight),
-            reps: parseInt(set.reps)
-          }))
+            reps: parseInt(set.reps),
+          })),
         }));
 
-        endpoint = '/api/strength';
         body = {
           name: strengthForm.name,
           date: strengthForm.date,
@@ -262,55 +333,65 @@ const WorkoutModal = ({
           rpe: strengthForm.rpe ? parseInt(strengthForm.rpe) : null,
           notes: strengthForm.notes,
           exercises: formattedExercises,
-          totalVolume: totalVolume // Kirim total volume yang sudah dihitung
+          totalVolume: totalVolume,
         };
       } else {
-        endpoint = '/api/cardio';
+        endpoint = "/api/cardio";
         body = {
           activityType: cardioForm.activityType,
           date: cardioForm.date,
           distance: parseFloat(cardioForm.distance),
           duration: parseInt(cardioForm.duration),
           location: cardioForm.location,
-          notes: cardioForm.notes
+          notes: cardioForm.notes,
         };
       }
 
-      console.log('Sending data:', body); // Debug log
+      console.log("Sending data:", body);
 
       const response = await fetch(`http://localhost:5000${endpoint}`, {
-        method: 'POST',
+        method: method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Jika ada error validasi dari backend
         if (data.errors && data.errors.length > 0) {
-          const errorMessages = data.errors.map(error => error.msg).join(', ');
+          const errorMessages = data.errors
+            .map((error) => error.msg)
+            .join(", ");
           throw new Error(errorMessages);
         }
-        throw new Error(data.error || data.message || `Failed to save ${modalType} workout`);
+        throw new Error(
+          data.error || data.message || `Failed to save ${modalType} workout`
+        );
       }
 
       // Success
-      console.log(`${modalType} workout saved:`, data);
-      alert(`${modalType.charAt(0).toUpperCase() + modalType.slice(1)} workout saved successfully!`);
-      
+      console.log(
+        `${modalType} workout ${editingWorkout ? "updated" : "saved"}:`,
+        data
+      );
+      alert(
+        `${modalType.charAt(0).toUpperCase() + modalType.slice(1)} workout ${
+          editingWorkout ? "updated" : "saved"
+        } successfully!`
+      );
+
       handleClose();
-      
-      // Refresh the page to show new data setelah delay kecil
+      onSuccess();
+
+      // Refresh the page to show new data
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-      
     } catch (err) {
-      console.error('Save workout error:', err);
+      console.error("Save workout error:", err);
       setError(err.message || `Failed to save ${modalType} workout`);
     } finally {
       setLoading(false);
@@ -323,7 +404,8 @@ const WorkoutModal = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
           <h2 className="text-2xl font-bold text-gray-800">
-            Log {modalType === 'strength' ? 'Strength' : 'Cardio'} Workout
+            {editingWorkout ? "Edit" : "Log"}{" "}
+            {modalType === "strength" ? "Strength" : "Cardio"} Workout
           </h2>
           <button
             onClick={handleClose}
@@ -342,7 +424,7 @@ const WorkoutModal = ({
             </div>
           )}
 
-          {modalType === 'strength' ? (
+          {modalType === "strength" ? (
             <div className="space-y-6">
               {/* Workout Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -409,15 +491,21 @@ const WorkoutModal = ({
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Rate of Perceived Exertion (optional)</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Rate of Perceived Exertion (optional)
+                  </p>
                 </div>
               </div>
 
               {/* Total Volume Display */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-blue-800">Total Volume:</span>
-                  <span className="text-2xl font-bold text-blue-600">{totalVolume.toLocaleString()} kg</span>
+                  <span className="text-sm font-medium text-blue-800">
+                    Total Volume:
+                  </span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    {totalVolume.toLocaleString()} kg
+                  </span>
                 </div>
                 <p className="text-xs text-blue-600 mt-1">
                   Volume = Σ(weight × reps) for all exercises
@@ -427,7 +515,9 @@ const WorkoutModal = ({
               {/* Exercises Section */}
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Exercises</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Exercises
+                  </h3>
                   <button
                     type="button"
                     onClick={addExercise}
@@ -440,13 +530,21 @@ const WorkoutModal = ({
 
                 <div className="space-y-4">
                   {strengthForm.exercises.map((exercise, exerciseIndex) => (
-                    <div key={exerciseIndex} className="border border-gray-200 rounded-lg p-4">
+                    <div
+                      key={exerciseIndex}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
                       <div className="flex justify-between items-center mb-3">
                         <input
                           type="text"
                           placeholder="Exercise name (e.g., Bench Press, Squat)"
                           value={exercise.name}
-                          onChange={(e) => handleExerciseNameChange(exerciseIndex, e.target.value)}
+                          onChange={(e) =>
+                            handleExerciseNameChange(
+                              exerciseIndex,
+                              e.target.value
+                            )
+                          }
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium"
                           disabled={loading}
                         />
@@ -465,7 +563,9 @@ const WorkoutModal = ({
                       {/* Sets */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-gray-700">Sets</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            Sets
+                          </span>
                           <button
                             type="button"
                             onClick={() => addSet(exerciseIndex)}
@@ -477,14 +577,24 @@ const WorkoutModal = ({
                         </div>
 
                         {exercise.sets.map((set, setIndex) => (
-                          <div key={setIndex} className="flex space-x-2 items-center">
+                          <div
+                            key={setIndex}
+                            className="flex space-x-2 items-center"
+                          >
                             <div className="flex-1 grid grid-cols-2 gap-2">
                               <div>
                                 <input
                                   type="number"
                                   placeholder="Weight (kg)"
                                   value={set.weight}
-                                  onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'weight', e.target.value)}
+                                  onChange={(e) =>
+                                    handleSetChange(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "weight",
+                                      e.target.value
+                                    )
+                                  }
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                   disabled={loading}
                                   min="0"
@@ -496,7 +606,14 @@ const WorkoutModal = ({
                                   type="number"
                                   placeholder="Reps"
                                   value={set.reps}
-                                  onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'reps', e.target.value)}
+                                  onChange={(e) =>
+                                    handleSetChange(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "reps",
+                                      e.target.value
+                                    )
+                                  }
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                   disabled={loading}
                                   min="1"
@@ -506,7 +623,9 @@ const WorkoutModal = ({
                             {exercise.sets.length > 1 && (
                               <button
                                 type="button"
-                                onClick={() => removeSet(exerciseIndex, setIndex)}
+                                onClick={() =>
+                                  removeSet(exerciseIndex, setIndex)
+                                }
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                                 disabled={loading}
                               >
@@ -544,7 +663,7 @@ const WorkoutModal = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Activity Type *
                 </label>
-                <select 
+                <select
                   name="activityType"
                   value={cardioForm.activityType}
                   onChange={handleCardioChange}
@@ -651,22 +770,38 @@ const WorkoutModal = ({
             <button
               onClick={handleSave}
               className={`flex-1 px-6 py-3 text-white rounded-lg font-medium transition-colors ${
-                modalType === 'strength' 
-                  ? 'bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400' 
-                  : 'bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400'
+                modalType === "strength"
+                  ? "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400"
+                  : "bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400"
               }`}
               disabled={loading}
             >
               {loading ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Saving...
                 </span>
               ) : (
-                'Save Workout'
+                "Save Workout"
               )}
             </button>
           </div>

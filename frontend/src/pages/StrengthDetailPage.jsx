@@ -15,6 +15,7 @@ import {
   Activity
 } from 'lucide-react';
 import { fetchWithAuth } from '../../utils/api';
+import WorkoutModal from '../components/WorkoutModal'; // Import WorkoutModal
 
 const StrengthDetailPage = () => {
   const { id } = useParams();
@@ -23,6 +24,8 @@ const StrengthDetailPage = () => {
   const [workout, setWorkout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState(null);
 
   // Fetch workout data
   useEffect(() => {
@@ -69,7 +72,42 @@ const StrengthDetailPage = () => {
       }
     }
   };
-    const handleExportPDF = () => {
+
+  // Handle edit workout
+  const handleEditWorkout = () => {
+    if (workout) {
+      // Format data untuk modal edit
+      const formattedWorkout = {
+        ...workout,
+        // Pastikan format exercises sesuai dengan yang diharapkan WorkoutModal
+        exercises: workout.exercises.map(exercise => ({
+          name: exercise.name,
+          sets: exercise.sets.map(set => ({
+            weight: set.weight.toString(),
+            reps: set.reps.toString()
+          }))
+        }))
+      };
+      setEditingWorkout(formattedWorkout);
+      setShowEditModal(true);
+    }
+  };
+
+  // Handle success edit
+  const handleEditSuccess = () => {
+    setShowEditModal(false);
+    setEditingWorkout(null);
+    // Refresh data
+    window.location.reload();
+  };
+
+  // Handle close modal
+  const handleCloseModal = () => {
+    setShowEditModal(false);
+    setEditingWorkout(null);
+  };
+
+  const handleExportPDF = () => {
     if (!workout) return;
     
     // Basic PDF export functionality
@@ -149,12 +187,6 @@ const StrengthDetailPage = () => {
     
     printWindow.document.close();
     printWindow.print();
-  };
-  // Handle edit workout
-  const handleEditWorkout = () => {
-    // Navigate to edit page or open edit modal
-    // For now, just show a message
-    alert('Edit functionality will be implemented soon');
   };
 
   // Calculate exercise volume
@@ -488,7 +520,7 @@ const StrengthDetailPage = () => {
           >
             Edit Workout
           </button>
-           <button
+          <button
             onClick={handleExportPDF}
             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
@@ -496,6 +528,20 @@ const StrengthDetailPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Edit Workout Modal */}
+      {showEditModal && (
+        <WorkoutModal
+          showModal={showEditModal}
+          setShowModal={setShowEditModal}
+          modalType="strength"
+          selectedWorkoutId={id}
+          setSelectedWorkoutId={() => {}}
+          editingWorkout={editingWorkout}
+          onSuccess={handleEditSuccess}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 };
