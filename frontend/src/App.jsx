@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -18,6 +18,8 @@ import CardioDetailPage from "./pages/CardioDetailPage";
 import WorkoutModal from "./components/WorkoutModal";
 import LoginPage from "./pages/LoginPage";
 import SignUp from "./pages/SignUpPage";
+import { useStrength } from './hooks/useStrength';
+import { useCardio } from './hooks/useCardio';
 
 const Layout = ({ children, appState }) => {
   const location = useLocation();
@@ -39,6 +41,8 @@ const App = () => {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("");
+  const [currentPage, setCurrentPage] = useState('dashboard');
+
 
   // User Profile State
   const [userProfile, setUserProfile] = useState({
@@ -60,6 +64,30 @@ const App = () => {
     setModalType,
     userProfile,
     setUserProfile,
+  };
+    const { 
+    strengthWorkouts, 
+    loading: strengthLoading, 
+    error: strengthError,
+    refreshData: refreshStrength 
+  } = useStrength();
+
+  const { 
+    cardioWorkouts, 
+    loading: cardioLoading, 
+    error: cardioError,
+    refreshData: refreshCardio 
+  } = useCardio();
+
+    useEffect(() => {
+    console.log('App - Strength Workouts:', strengthWorkouts);
+    console.log('App - Cardio Workouts:', cardioWorkouts);
+    console.log('App - Strength Loading:', strengthLoading);
+    console.log('App - Cardio Loading:', cardioLoading);
+  }, [strengthWorkouts, cardioWorkouts, strengthLoading, cardioLoading]);
+
+  const refreshAllData = async () => {
+    await Promise.all([refreshStrength(), refreshCardio()]);
   };
 
   return (
@@ -83,7 +111,17 @@ const App = () => {
             <Route path="/cardio" element={<CardioListPage {...appState} />} />
             <Route
               path="/dashboard"
-              element={<DashboardPage {...appState} />}
+              element={
+                <DashboardPage
+                  {...appState}
+                  userProfile={userProfile}
+                  setModalType={setModalType}
+                  setShowModal={setShowModal}
+                  strengthWorkouts={strengthWorkouts || []} // Pastikan tidak undefined
+                  cardioWorkouts={cardioWorkouts || []} // Pastikan tidak undefined
+                  setSelectedWorkoutId={setSelectedWorkoutId}
+                />
+              }
             />
             <Route path="/goals" element={<GoalsPage {...appState} />} />
             <Route path="/profile" element={<ProfilePage {...appState} />} />
@@ -94,7 +132,7 @@ const App = () => {
               element={<StrengthDetailPage {...appState} />}
             />
             <Route
-              path="/cardio-detail"
+              path="/cardio-detail/:id"
               element={<CardioDetailPage {...appState} />}
             />
           </Routes>

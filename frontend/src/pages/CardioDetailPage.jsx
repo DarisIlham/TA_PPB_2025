@@ -12,11 +12,10 @@ import {
   Loader,
   AlertCircle,
   BarChart3,
-  MapPin,
-  Download,
-  Heart
+  MapPin
 } from 'lucide-react';
 import { fetchWithAuth } from '../../utils/api';
+import WorkoutModal from '../components/WorkoutModal'; // Import WorkoutModal instead of CardioModal
 
 const CardioDetailPage = () => {
   const { id } = useParams();
@@ -42,11 +41,11 @@ const CardioDetailPage = () => {
         if (workoutData) {
           setWorkout(workoutData);
         } else {
-          setError('Workout not found');
+          setError('Cardio workout not found');
         }
       } catch (err) {
         console.error('Error loading cardio workout:', err);
-        setError(err.message || 'Failed to load workout data');
+        setError(err.message || 'Failed to load cardio workout data');
       } finally {
         setLoading(false);
       }
@@ -59,7 +58,7 @@ const CardioDetailPage = () => {
 
   // Handle delete workout
   const handleDeleteWorkout = async () => {
-    if (window.confirm('Are you sure you want to delete this workout? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to delete this cardio workout? This action cannot be undone.')) {
       try {
         setLoading(true);
         await fetchWithAuth(`/cardio/${id}`, {
@@ -67,16 +66,17 @@ const CardioDetailPage = () => {
         });
         navigate('/cardio');
       } catch (err) {
-        alert('Failed to delete workout: ' + err.message);
+        alert('Failed to delete cardio workout: ' + err.message);
       } finally {
         setLoading(false);
       }
     }
   };
 
-  // Handle edit workout
+  // Handle edit workout - FIXED
   const handleEditWorkout = () => {
     if (workout) {
+      console.log('Editing workout:', workout);
       setEditingWorkout(workout);
       setShowEditModal(true);
     }
@@ -86,8 +86,19 @@ const CardioDetailPage = () => {
   const handleEditSuccess = () => {
     setShowEditModal(false);
     setEditingWorkout(null);
-    // Refresh data
-    window.location.reload();
+    // Refresh data by refetching
+    const loadWorkoutData = async () => {
+      try {
+        setLoading(true);
+        const workoutData = await fetchWithAuth(`/cardio/${id}`);
+        setWorkout(workoutData);
+      } catch (err) {
+        console.error('Error refreshing workout data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadWorkoutData();
   };
 
   // Handle close modal
@@ -96,10 +107,79 @@ const CardioDetailPage = () => {
     setEditingWorkout(null);
   };
 
-  // Calculate pace
-  const calculatePace = () => {
-    if (!workout || !workout.distance || !workout.duration) return 0;
-    return (workout.duration / workout.distance).toFixed(2);
+  const handleExportPDF = () => {
+    if (!workout) return;
+    
+    const printWindow = window.open('', '_blank');
+    const workoutDate = new Date(workout.date).toLocaleDateString();
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${workout.type} - ${workoutDate}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+            .metric { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+            .details { margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${workout.type} Session</h1>
+            <p>${workoutDate}</p>
+          </div>
+          
+          <div class="metrics">
+            <div class="metric">
+              <strong>Distance</strong><br>
+              ${workout.distance} km
+            </div>
+            <div class="metric">
+              <strong>Duration</strong><br>
+              ${Math.floor(workout.duration / 60)}h ${workout.duration % 60}m
+            </div>
+            <div class="metric">
+              <strong>Pace</strong><br>
+              ${workout.pace || 'N/A'}
+            </div>
+            <div class="metric">
+              <strong>Calories</strong><br>
+              ${workout.calories || 'N/A'}
+            </div>
+          </div>
+
+          <div class="details">
+            <h2>Session Details</h2>
+            <table>
+              <tr>
+                <th>Activity Type</th>
+                <td>${workout.type}</td>
+              </tr>
+              <tr>
+                <th>Distance</th>
+                <td>${workout.distance} km</td>
+              </tr>
+              <tr>
+                <th>Duration</th>
+                <td>${Math.floor(workout.duration / 60)}h ${workout.duration % 60}m</td>
+              </tr>
+              ${workout.pace ? `<tr><th>Pace</th><td>${workout.pace}</td></tr>` : ''}
+              ${workout.calories ? `<tr><th>Calories</th><td>${workout.calories} cal</td></tr>` : ''}
+              ${workout.location ? `<tr><th>Location</th><td>${workout.location}</td></tr>` : ''}
+              ${workout.notes ? `<tr><th>Notes</th><td>${workout.notes}</td></tr>` : ''}
+            </table>
+          </div>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.print();
   };
 
   // Format date
@@ -112,71 +192,30 @@ const CardioDetailPage = () => {
     });
   };
 
-  // Handle export PDF
-  const handleExportPDF = () => {
-    if (!workout) return;
-    
-    const printWindow = window.open('', '_blank');
-    const workoutDate = new Date(workout.date).toLocaleDateString();
-    
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${workout.activityType} - ${workoutDate}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-            .metric { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
-            .section { margin-bottom: 30px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>${workout.activityType}</h1>
-            <p>${workoutDate}</p>
-          </div>
-          
-          <div class="metrics">
-            <div class="metric">
-              <strong>Distance</strong><br>
-              ${workout.distance} km
-            </div>
-            <div class="metric">
-              <strong>Duration</strong><br>
-              ${workout.duration} min
-            </div>
-            <div class="metric">
-              <strong>Pace</strong><br>
-              ${calculatePace()} min/km
-            </div>
-            <div class="metric">
-              <strong>Location</strong><br>
-              ${workout.location || 'N/A'}
-            </div>
-          </div>
+  // Format duration
+  const formatDuration = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  };
 
-          ${workout.notes ? `
-            <div class="section">
-              <h2>Notes</h2>
-              <p>${workout.notes}</p>
-            </div>
-          ` : ''}
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.print();
+  // Calculate average speed
+  const calculateSpeed = () => {
+    if (!workout || !workout.distance || !workout.duration) return null;
+    const hours = workout.duration / 60;
+    return (workout.distance / hours).toFixed(2);
   };
 
   // Loading state
-  if (loading) {
+  if (loading && !workout) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader className="w-12 h-12 animate-spin text-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Loading workout details...</p>
+          <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg">Loading cardio workout details...</p>
         </div>
       </div>
     );
@@ -192,14 +231,14 @@ const CardioDetailPage = () => {
             {error ? 'Error Loading Workout' : 'Workout Not Found'}
           </h2>
           <p className="text-gray-600 mb-6">
-            {error || 'The workout you are looking for does not exist.'}
+            {error || 'The cardio workout you are looking for does not exist.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => navigate('/cardio')}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Back to Workouts
+              Back to Cardio
             </button>
             <button
               onClick={() => window.location.reload()}
@@ -222,10 +261,10 @@ const CardioDetailPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 to="/cardio"
-                className="flex items-center text-gray-600 hover:text-purple-600 transition-colors"
+                className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
-                Back to Cardio Sessions
+                Back to Cardio
               </Link>
             </div>
             
@@ -252,11 +291,11 @@ const CardioDetailPage = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-4">
-                <div className="bg-purple-100 p-3 rounded-xl">
-                  <Activity className="w-8 h-8 text-purple-600" />
+                <div className="bg-blue-100 p-3 rounded-xl">
+                  <Activity className="w-8 h-8 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{workout.activityType}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 capitalize">{workout.type}</h1>
                   <div className="flex items-center space-x-4 mt-2 text-gray-600">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
@@ -264,7 +303,7 @@ const CardioDetailPage = () => {
                     </div>
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{workout.duration} minutes</span>
+                      <span>{formatDuration(workout.duration)}</span>
                     </div>
                     {workout.location && (
                       <div className="flex items-center space-x-1">
@@ -277,10 +316,10 @@ const CardioDetailPage = () => {
               </div>
               
               <div className="text-right">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-3 rounded-lg">
-                  <div className="text-sm font-medium opacity-90">Average Pace</div>
+                <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white px-4 py-3 rounded-lg">
+                  <div className="text-sm font-medium opacity-90">Distance</div>
                   <div className="text-2xl font-bold">
-                    {calculatePace()} min/km
+                    {workout.distance} km
                   </div>
                 </div>
               </div>
@@ -295,135 +334,152 @@ const CardioDetailPage = () => {
           </div>
         </div>
 
-        {/* Session Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        {/* Session Details */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+              Session Details
+            </h2>
+          </div>
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Activity Type</span>
+                  <span className="font-semibold text-gray-900 capitalize">{workout.type}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Distance</span>
+                  <span className="font-semibold text-blue-600">{workout.distance} km</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Duration</span>
+                  <span className="font-semibold text-gray-900">{formatDuration(workout.duration)}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                {workout.pace && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Pace</span>
+                    <span className="font-semibold text-green-600">{workout.pace}</span>
+                  </div>
+                )}
+                {workout.calories && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Calories Burned</span>
+                    <span className="font-semibold text-orange-600">{workout.calories} cal</span>
+                  </div>
+                )}
+                {workout.location && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Location</span>
+                    <span className="font-semibold text-gray-900">{workout.location}</span>
+                  </div>
+                )}
+                {calculateSpeed() && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Average Speed</span>
+                    <span className="font-semibold text-purple-600">{calculateSpeed()} km/h</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Performance Metrics */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Distance Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Distance</h3>
-              <TrendingUp className="w-5 h-5 text-purple-600" />
+              <TrendingUp className="w-5 h-5 text-blue-600" />
             </div>
-            <div className="text-3xl font-bold text-purple-600">
-              {workout.distance} km
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Distance</span>
+                <span className="font-semibold text-blue-600">
+                  {workout.distance} km
+                </span>
+              </div>
+              {workout.pace && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Average Pace</span>
+                  <span className="font-semibold text-green-600">{workout.pace}</span>
+                </div>
+              )}
             </div>
-            <p className="text-sm text-gray-500 mt-2">Total distance covered</p>
           </div>
 
+          {/* Duration Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Duration</h3>
-              <Clock className="w-5 h-5 text-pink-600" />
+              <Clock className="w-5 h-5 text-purple-600" />
             </div>
-            <div className="text-3xl font-bold text-pink-600">
-              {workout.duration} min
-            </div>
-            <p className="text-sm text-gray-500 mt-2">Total time spent</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Pace</h3>
-              <Activity className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="text-3xl font-bold text-blue-600">
-              {calculatePace()}/km
-            </div>
-            <p className="text-sm text-gray-500 mt-2">Average pace per km</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Calories</h3>
-              <Heart className="w-5 h-5 text-orange-600" />
-            </div>
-            <div className="text-3xl font-bold text-orange-600">
-              {workout.calories || Math.round(workout.distance * 60)}
-            </div>
-            <p className="text-sm text-gray-500 mt-2">Estimated calories burned</p>
-          </div>
-        </div>
-
-        {/* Performance Analysis */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center mb-4">
-            <BarChart3 className="w-5 h-5 mr-2 text-purple-600" />
-            Performance Analysis
-          </h2>
-          
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded">
-              <p className="font-semibold text-green-800">Good Effort!</p>
-              <p className="text-sm text-green-700">
-                This pace is consistent with your recent training sessions.
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Intensity Level</p>
-                <p className="text-lg font-bold text-purple-600">Moderate</p>
-                <p className="text-sm text-gray-500">Based on your pace and duration</p>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Time</span>
+                <span className="font-semibold text-purple-600">
+                  {formatDuration(workout.duration)}
+                </span>
               </div>
-              
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Heart Rate Zone</p>
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Zone 2 (Aerobic)</span>
-                    <span className="font-bold">65%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{width: '65%'}}></div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Zone 3 (Tempo)</span>
-                    <span className="font-bold">25%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '25%'}}></div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Zone 4 (Threshold)</span>
-                    <span className="font-bold">10%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-yellow-500 h-2 rounded-full" style={{width: '10%'}}></div>
-                  </div>
+              {calculateSpeed() && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Average Speed</span>
+                  <span className="font-semibold text-gray-900">
+                    {calculateSpeed()} km/h
+                  </span>
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
+
+          {/* Calories Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Energy</h3>
+              <Award className="w-5 h-5 text-orange-500" />
+            </div>
+            <div className="space-y-2">
+              {workout.calories ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Calories Burned</span>
+                    <span className="font-semibold text-orange-600">{workout.calories} cal</span>
+                  </div>
+                  {workout.duration > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Calories/Hour</span>
+                      <span className="font-semibold text-gray-900">
+                        {Math.round((workout.calories / workout.duration) * 60)} cal/h
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No calorie data available</p>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Route Map Placeholder */}
-        {workout.location && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center mb-4">
-              <MapPin className="w-5 h-5 mr-2 text-red-600" />
-              Route Information
-            </h2>
-            <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <MapPin className="w-12 h-12 mx-auto mb-2" />
-                <p>Route map visualization</p>
-                <p className="text-sm">Location: {workout.location}</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
           <button
             onClick={() => navigate('/cardio')}
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
-            Back to Sessions
+            Back to Cardio
           </button>
           <button
             onClick={handleEditWorkout}
             className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
-            Edit Session
+            Edit Workout
           </button>
           <button
             onClick={handleExportPDF}

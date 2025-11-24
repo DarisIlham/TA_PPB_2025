@@ -49,10 +49,12 @@ const WorkoutModal = ({
   useEffect(() => {
   if (editingWorkout && modalType === 'cardio') {
     setCardioForm({
-      activityType: editingWorkout.activityType || 'Running',
+      type: editingWorkout.type || 'Running', // Ganti activityType menjadi type
       date: editingWorkout.date || new Date().toISOString().split('T')[0],
       distance: editingWorkout.distance?.toString() || '',
       duration: editingWorkout.duration?.toString() || '',
+      pace: editingWorkout.pace || '', // Tambah field pace
+      calories: editingWorkout.calories?.toString() || '', // Tambah field calories
       location: editingWorkout.location || '',
       notes: editingWorkout.notes || ''
     });
@@ -78,12 +80,14 @@ const WorkoutModal = ({
     ],
   });
 
-  // State untuk cardio form
+  // State untuk cardio form - DIPERBAIKI
   const [cardioForm, setCardioForm] = useState({
-    activityType: "Running",
+    type: "Running", // Ganti activityType menjadi type
     date: new Date().toISOString().split("T")[0],
     distance: "",
     duration: "",
+    pace: "", // Tambah field pace
+    calories: "", // Tambah field calories
     location: "",
     notes: "",
   });
@@ -132,10 +136,12 @@ const WorkoutModal = ({
         ],
       });
       setCardioForm({
-        activityType: "Running",
+        type: "Running", // Ganti activityType menjadi type
         date: new Date().toISOString().split("T")[0],
         distance: "",
         duration: "",
+        pace: "", // Tambah field pace
+        calories: "", // Tambah field calories
         location: "",
         notes: "",
       });
@@ -152,7 +158,7 @@ const WorkoutModal = ({
     });
   };
 
-  // Handle input change untuk cardio
+  // Handle input change untuk cardio - DIPERBAIKI
   const handleCardioChange = (e) => {
     setCardioForm({
       ...cardioForm,
@@ -239,7 +245,7 @@ const WorkoutModal = ({
     }
   };
 
-  // Validasi form
+  // Validasi form - DIPERBAIKI untuk cardio
   const validateForm = () => {
     if (modalType === "strength") {
       if (!strengthForm.name.trim()) {
@@ -278,6 +284,11 @@ const WorkoutModal = ({
         }
       }
     } else {
+      // Validasi cardio - DIPERBAIKI
+      if (!cardioForm.type || !cardioForm.type.trim()) {
+        setError("Activity type is required");
+        return false;
+      }
       if (!cardioForm.distance || cardioForm.distance <= 0) {
         setError("Distance must be greater than 0");
         return false;
@@ -290,7 +301,7 @@ const WorkoutModal = ({
     return true;
   };
 
-  // Handle save workout
+  // Handle save workout - DIPERBAIKI untuk cardio
   const handleSave = async () => {
     if (!validateForm()) return;
 
@@ -311,9 +322,13 @@ const WorkoutModal = ({
       // Jika dalam mode edit, gunakan method PUT dan endpoint yang sesuai
       if (editingWorkout && selectedWorkoutId) {
         method = "PUT";
-        endpoint = `/api/strength/${selectedWorkoutId}`;
+        if (modalType === "strength") {
+          endpoint = `/api/strength/${selectedWorkoutId}`;
+        } else {
+          endpoint = `/api/cardio/${selectedWorkoutId}`;
+        }
       } else {
-        endpoint = "/api/strength";
+        endpoint = modalType === "strength" ? "/api/strength" : "/api/cardio";
       }
 
       if (modalType === "strength") {
@@ -336,14 +351,16 @@ const WorkoutModal = ({
           totalVolume: totalVolume,
         };
       } else {
-        endpoint = "/api/cardio";
+        // Format cardio data - DIPERBAIKI sesuai dengan backend
         body = {
-          activityType: cardioForm.activityType,
+          type: cardioForm.type, // Ganti activityType menjadi type
           date: cardioForm.date,
           distance: parseFloat(cardioForm.distance),
           duration: parseInt(cardioForm.duration),
-          location: cardioForm.location,
-          notes: cardioForm.notes,
+          pace: cardioForm.pace || null, // Tambah pace (optional)
+          calories: cardioForm.calories ? parseInt(cardioForm.calories) : null, // Tambah calories (optional)
+          location: cardioForm.location || null, // Tambah location (optional)
+          notes: cardioForm.notes || null, // Tambah notes (optional)
         };
       }
 
@@ -657,15 +674,15 @@ const WorkoutModal = ({
               </div>
             </div>
           ) : (
-            // Cardio form (tetap sama seperti sebelumnya)
+            // Cardio form - DIPERBAIKI
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Activity Type *
                 </label>
                 <select
-                  name="activityType"
-                  value={cardioForm.activityType}
+                  name="type" // Ganti activityType menjadi type
+                  value={cardioForm.type}
                   onChange={handleCardioChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   disabled={loading}
@@ -675,6 +692,9 @@ const WorkoutModal = ({
                   <option value="Swimming">Swimming</option>
                   <option value="Rowing">Rowing</option>
                   <option value="Walking">Walking</option>
+                  <option value="Hiking">Hiking</option>
+                  <option value="Elliptical">Elliptical</option>
+                  <option value="Stair Climber">Stair Climber</option>
                 </select>
               </div>
 
@@ -723,6 +743,44 @@ const WorkoutModal = ({
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     disabled={loading}
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pace (min/km)
+                  </label>
+                  <input
+                    name="pace"
+                    type="text"
+                    placeholder="e.g., 5:30, 6:15"
+                    value={cardioForm.pace}
+                    onChange={handleCardioChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional - average pace per km
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Calories
+                  </label>
+                  <input
+                    name="calories"
+                    type="number"
+                    min="1"
+                    placeholder="300"
+                    value={cardioForm.calories}
+                    onChange={handleCardioChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional - estimated calories burned
+                  </p>
                 </div>
               </div>
 

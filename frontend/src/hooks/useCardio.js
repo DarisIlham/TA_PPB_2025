@@ -3,60 +3,176 @@ import { fetchWithAuth } from '../../utils/api';
 
 export const useCardio = () => {
   const [cardioWorkouts, setCardioWorkouts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
   const [personalRecords, setPersonalRecords] = useState(null);
 
-  const loadCardioData = async () => {
+  // Get all cardio workouts
+  const fetchCardioWorkouts = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      
-      const [workoutsData, statsData] = await Promise.all([
-        fetchWithAuth('/cardio'),
-        fetchWithAuth('/cardio/stats')
-      ]);
-
-      setCardioWorkouts(workoutsData || []);
-      setStats(statsData || {});
-
-      // Calculate personal records
-      if (workoutsData && workoutsData.length > 0) {
-        const records = {
-          fastest5K: workoutsData
-            .filter(w => w.distance >= 5 && w.distance <= 5.5)
-            .sort((a, b) => a.duration - b.duration)[0],
-          longestDistance: workoutsData
-            .sort((a, b) => b.distance - a.distance)[0],
-          bestPace: workoutsData
-            .filter(w => w.distance > 0)
-            .sort((a, b) => (a.duration / a.distance) - (b.duration / b.distance))[0]
-        };
-        setPersonalRecords(records);
-      }
+      const data = await fetchWithAuth('/cardio?limit=100&sort=-date');
+      // Handle both response formats
+      const workouts = data.cardioWorkouts || data;
+      setCardioWorkouts(Array.isArray(workouts) ? workouts : []);
+      return workouts;
     } catch (err) {
-      setError(err.message || 'Failed to load cardio data');
-      console.error('Error loading cardio data:', err);
+      const errorMsg = err.message || 'Failed to fetch cardio workouts';
+      setError(errorMsg);
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteCardioWorkout = async (workoutId) => {
+  // Get single cardio workout
+  const fetchCardioWorkout = async (id) => {
+    setLoading(true);
+    setError(null);
     try {
-      await fetchWithAuth(`/cardio/${workoutId}`, {
-        method: 'DELETE'
-      });
-      // Remove from local state
-      setCardioWorkouts(prev => prev.filter(w => w.cardio_id !== workoutId));
+      const data = await fetchWithAuth(`/cardio/${id}`);
+      return data;
     } catch (err) {
-      throw new Error(err.message || 'Failed to delete workout');
+      const errorMsg = err.message || 'Failed to fetch cardio workout';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Create new cardio workout
+  const createCardioWorkout = async (workoutData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchWithAuth('/cardio', {
+        method: 'POST',
+        body: JSON.stringify(workoutData),
+      });
+      setCardioWorkouts(prev => [data, ...prev]);
+      return data;
+    } catch (err) {
+      const errorMsg = err.message || 'Failed to create cardio workout';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update cardio workout
+  const updateCardioWorkout = async (id, workoutData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchWithAuth(`/cardio/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(workoutData),
+      });
+      setCardioWorkouts(prev => 
+        prev.map(workout => 
+          workout.cardio_id === parseInt(id) ? data : workout
+        )
+      );
+      return data;
+    } catch (err) {
+      const errorMsg = err.message || 'Failed to update cardio workout';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete cardio workout
+  const deleteCardioWorkout = async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchWithAuth(`/cardio/${id}`, {
+        method: 'DELETE',
+      });
+      setCardioWorkouts(prev => 
+        prev.filter(workout => workout.cardio_id !== parseInt(id))
+      );
+    } catch (err) {
+      const errorMsg = err.message || 'Failed to delete cardio workout';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get cardio statistics
+  const fetchCardioStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchWithAuth('/cardio/stats/summary');
+      setStats(data);
+      return data;
+    } catch (err) {
+      const errorMsg = err.message || 'Failed to fetch cardio stats';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get personal records
+  const fetchPersonalRecords = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchWithAuth('/cardio/stats/prs');
+      setPersonalRecords(data);
+      return data;
+    } catch (err) {
+      const errorMsg = err.message || 'Failed to fetch cardio PRs';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh all data
+  const refreshData = async () => {
+    try {
+      await Promise.all([
+        fetchCardioWorkouts(),
+        fetchCardioStats(),
+        fetchPersonalRecords()
+      ]);
+    } catch (err) {
+      console.error('Error refreshing cardio data:', err);
+      throw err;
+    }
+  };
+
+  // Initial data loading
   useEffect(() => {
-    loadCardioData();
+    const loadInitialData = async () => {
+      try {
+        setLoading(true);
+        await Promise.all([
+          fetchCardioWorkouts(),
+          fetchCardioStats(),
+          fetchPersonalRecords()
+        ]);
+      } catch (err) {
+        console.error('Error loading initial cardio data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
   }, []);
 
   return {
@@ -65,7 +181,13 @@ export const useCardio = () => {
     error,
     stats,
     personalRecords,
-    refreshData: loadCardioData,
-    deleteCardioWorkout
+    fetchCardioWorkouts,
+    fetchCardioWorkout,
+    createCardioWorkout,
+    updateCardioWorkout,
+    deleteCardioWorkout,
+    fetchCardioStats,
+    fetchPersonalRecords,
+    refreshData
   };
 };
