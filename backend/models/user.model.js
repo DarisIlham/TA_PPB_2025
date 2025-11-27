@@ -18,6 +18,30 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  profile_picture: {
+    type: String, // Base64 string
+    default: null,
+  },
+  age: {
+    type: Number,
+    default: 0,
+  },
+  weight: {
+    type: Number,
+    default: 0,
+  },
+  height: {
+    type: Number,
+    default: 0,
+  },
+  unit: {
+    type: String,
+    default: "kg",
+  },
+  distanceUnit: {
+    type: String,
+    default: "km",
+  },
   created_at: {
     type: Date,
     default: Date.now,

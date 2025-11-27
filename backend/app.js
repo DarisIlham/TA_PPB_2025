@@ -35,6 +35,7 @@ app.use("/api/users", profileRoutes);
 app.use('/api/cardio', cardioRoutes);
 app.use('/api/goals', goalRoutes);   
 app.use('/api/strength', strengthRoutes);
+app.use('/api/profile', profileRoutes);
 
 
 app.get("/", (req, res) => {

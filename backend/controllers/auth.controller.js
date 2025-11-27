@@ -80,3 +80,35 @@ export const login = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const userData = await User.findOne({ 
+      user_id: req.user.user_id 
+    }).select('-password');
+    
+    if (!userData) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      user: {
+        id: userData.user_id,
+        name: userData.name,
+        email: userData.email,
+        profile_picture: userData.profile_picture,
+        age: userData.age,
+        weight: userData.weight,
+        height: userData.height,
+        unit: userData.unit,
+        distanceUnit: userData.distanceUnit,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
