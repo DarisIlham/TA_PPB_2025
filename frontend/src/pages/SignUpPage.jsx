@@ -1,20 +1,20 @@
-// src/pages/loginpage.js
+// src/pages/SignUpPage.jsx
 import React, { useState } from "react";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import back from "../img/return.png";
 
-const LoginPage = () => {
+const SignUpPage = ({ setUserProfile }) => {
   const navigate = useNavigate();
+ 
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
   });
 
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -36,8 +36,20 @@ const LoginPage = () => {
       });
 
       if (res.ok) {
-        // Redirect after success
-        navigate("/login");
+        // Set user profile di context dan local state setelah signup berhasil
+        const newUserProfile = {
+          name: formData.name,
+          email: formData.email,
+          age: 0,
+          weight: 0,
+          height: 0,
+          unit: "kg",
+          distanceUnit: "km"
+        };
+        
+        
+        // Redirect setelah success
+        navigate("/");
       } else {
         const errorData = await res.json();
         alert("Sign up failed: " + errorData.message);
@@ -49,7 +61,7 @@ const LoginPage = () => {
 
   const handleSign = (e) => {
     e.preventDefault();
-    navigate("/login");
+    navigate("/");
   };
 
   const backSign = (e) => {
@@ -77,6 +89,7 @@ const LoginPage = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="my-1 outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                required
               />
             </div>
 
@@ -88,17 +101,19 @@ const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                required
               />
             </div>
 
             <div className="flex mb-[24px] w-[343px] h-[56px] items-center border rounded-[16px] py-[8px] px-[16px] gap-[10px]">
               <input
                 name="password"
-                 type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
                 className="outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                required
               />
               <span className="mr-2 text-2xl cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
                 {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
@@ -109,10 +124,10 @@ const LoginPage = () => {
               <input
                 type="checkbox"
                 className="w-[32px] h-[32px] mr-[10px] accent-[#42AB39]"
+                required
               />
               <label className="text-[14px] text-[#000000] font-medium lg:w-[250px]">
-                By signing up, you agree to the Terms of Service and Privacy
-                Policy
+                By signing up, you agree to the Terms of Service and Privacy Policy
               </label>
             </div>
 
@@ -136,5 +151,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
-
+export default SignUpPage;

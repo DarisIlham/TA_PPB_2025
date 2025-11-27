@@ -133,15 +133,8 @@ const StrengthListPage = ({
        {/* Header dengan back button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link
-            to="/home"
-            className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors"
-            title="Back to Home"
-          >
-            <ArrowLeft className="w-5 h-5 mr-1" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <div className="border-l border-gray-300 h-6"></div>
+          
+          
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center">
               <Dumbbell className="w-8 h-8 mr-3 text-indigo-600" />

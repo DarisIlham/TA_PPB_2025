@@ -35,31 +35,80 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useStrength } from "../hooks/useStrength";
+import { useCardio } from "../hooks/useCardio";
+
 const Homepage = ({
   userProfile,
   setModalType,
   setShowModal,
-  strengthWorkouts,
-  cardioWorkouts,
   setSelectedWorkoutId,
-  // setCurrentPage, // Remove if using React Router navigation
 }) => {
+  const { strengthWorkouts, loading: strengthLoading, error: strengthError } = useStrength();
+  const { cardioWorkouts, loading: cardioLoading, error: cardioError } = useCardio();
+  const [currentUserProfile, setCurrentUserProfile] = useState(userProfile);
+
+  // Fetch user profile data from backend
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserProfile(prev => ({
+            ...prev,
+            name: data.user.name,
+            email: data.user.email
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    // Only fetch if userProfile doesn't have name or we want to refresh
+    if (!userProfile?.name) {
+      fetchUserProfile();
+    } else {
+      setCurrentUserProfile(userProfile);
+    }
+  }, [userProfile]);
+
   // Calculate Weekly Summary
   const getWeeklySummary = () => {
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
     const weeklyStrength = strengthWorkouts.filter(
       (w) => new Date(w.date) >= weekAgo
     );
     const weeklyCardio = cardioWorkouts.filter(
       (w) => new Date(w.date) >= weekAgo
     );
+    
     const totalVolume = weeklyStrength.reduce(
-      (sum, w) => sum + w.totalVolume,
+      (sum, w) => sum + (w.totalVolume || 0),
       0
     );
-    const totalDistance = weeklyCardio.reduce((sum, w) => sum + w.distance, 0);
-    const totalCalories = weeklyCardio.reduce((sum, w) => sum + w.calories, 0);
+    const totalDistance = weeklyCardio.reduce(
+      (sum, w) => sum + (w.distance || 0),
+      0
+    );
+    const totalCalories = weeklyCardio.reduce(
+      (sum, w) => sum + (w.calories || 0),
+      0
+    );
+    
     return {
       totalVolume,
       totalDistance,
@@ -67,16 +116,56 @@ const Homepage = ({
       workouts: weeklyStrength.length + weeklyCardio.length,
     };
   };
+
   const summary = getWeeklySummary();
-  const lastWorkout = [...strengthWorkouts, ...cardioWorkouts].sort(
-    (a, b) => new Date(b.date) - new Date(a.date)
-  )[0];
+  
+  // Get latest workout
+  const lastWorkout = [...strengthWorkouts, ...cardioWorkouts]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Loading state
+  if (strengthLoading || cardioLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <span className="ml-2 text-gray-600">Loading workouts...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (strengthError || cardioError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 text-red-600">
+        <div className="text-lg font-semibold mb-2">Error loading data</div>
+        <p className="text-sm text-center">
+          {strengthError || cardioError}
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl p-8 shadow-lg">
         <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {userProfile.name}!
+          Welcome back, {currentUserProfile?.name || 'User'}!
         </h1>
         <p className="text-indigo-100">Ready to forge your fitness journey?</p>
       </div>
@@ -164,6 +253,31 @@ const Homepage = ({
         </div>
       </div>
 
+      {/* Workout Count Summary */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h3 className="text-lg font-bold mb-3 flex items-center">
+            <Dumbbell className="w-5 h-5 mr-2 text-indigo-600" />
+            Strength Workouts
+          </h3>
+          <p className="text-3xl font-bold text-indigo-600">
+            {strengthWorkouts.length}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">Total sessions logged</p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h3 className="text-lg font-bold mb-3 flex items-center">
+            <Heart className="w-5 h-5 mr-2 text-purple-600" />
+            Cardio Sessions
+          </h3>
+          <p className="text-3xl font-bold text-purple-600">
+            {cardioWorkouts.length}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">Total sessions logged</p>
+        </div>
+      </div>
+
       {/* Latest Session */}
       {lastWorkout && (
         <div className="bg-white rounded-xl shadow-md p-6">
@@ -176,14 +290,29 @@ const Homepage = ({
               <p className="font-semibold text-lg">
                 {lastWorkout.name || lastWorkout.type}
               </p>
-              <p className="text-sm text-gray-600">{lastWorkout.date}</p>
+              <p className="text-sm text-gray-600">
+                {formatDate(lastWorkout.date)}
+              </p>
+              {lastWorkout.strength_id && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {lastWorkout.exercises?.length || 0} exercises • {lastWorkout.totalVolume?.toLocaleString() || 0} kg volume
+                </p>
+              )}
+              {lastWorkout.cardio_id && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {lastWorkout.distance} km • {lastWorkout.duration} min
+                </p>
+              )}
             </div>
             <button
               onClick={() => {
-                setSelectedWorkoutId(lastWorkout.id);
-                setCurrentPage(
-                  lastWorkout.name ? "strength-detail" : "cardio-detail"
-                );
+                setSelectedWorkoutId(lastWorkout.strength_id || lastWorkout.cardio_id);
+                // Navigate to appropriate detail page based on workout type
+                if (lastWorkout.strength_id) {
+                  window.location.href = `/strength-detail/${lastWorkout.strength_id}`;
+                } else {
+                  window.location.href = `/cardio-detail/${lastWorkout.cardio_id}`;
+                }
               }}
               className="text-indigo-600 hover:text-indigo-800 font-medium flex items-center"
             >
@@ -192,6 +321,49 @@ const Homepage = ({
           </div>
         </div>
       )}
+
+      {/* Recent Activity Preview */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-xl font-bold mb-4 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
+          Recent Activity
+        </h2>
+        <div className="space-y-3">
+          {[...strengthWorkouts, ...cardioWorkouts]
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 3)
+            .map((workout, index) => (
+              <div key={workout.strength_id || workout.cardio_id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  {workout.strength_id ? (
+                    <Dumbbell className="w-4 h-4 text-indigo-600" />
+                  ) : (
+                    <Heart className="w-4 h-4 text-purple-600" />
+                  )}
+                  <div>
+                    <p className="font-medium text-sm">
+                      {workout.name || workout.type}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(workout.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {workout.strength_id ? (
+                    <p className="text-sm font-semibold text-indigo-600">
+                      {workout.totalVolume?.toLocaleString()} kg
+                    </p>
+                  ) : (
+                    <p className="text-sm font-semibold text-purple-600">
+                      {workout.distance} km
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
 
       {/* Motivational Card */}
       <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl p-6 shadow-md">
@@ -203,4 +375,5 @@ const Homepage = ({
     </div>
   );
 };
+
 export default Homepage;

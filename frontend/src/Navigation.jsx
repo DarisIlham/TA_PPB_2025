@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, User, Info, Dumbbell, Heart, BarChart3, Target } from 'lucide-react';
+import {
+  Home, User, Info, Dumbbell, Heart, BarChart3, Target, Menu, X
+} from 'lucide-react';
 
 const navItems = [
   { id: 'home', icon: Home, label: 'Home', path: '/home' },
@@ -14,74 +16,96 @@ const navItems = [
 
 const Navigation = () => {
   const location = useLocation();
-  
-  // Check if current path matches or is a subpath
-  const isActivePath = (path) => {
-    if (path === '/home') {
-      return location.pathname === '/home';
-    }
-    return location.pathname.startsWith(path);
-  };
+  const [openMenu, setOpenMenu] = useState(false);
+
+  const isActivePath = (path) =>
+    path === '/home'
+      ? location.pathname === '/home'
+      : location.pathname.startsWith(path);
 
   return (
-    <nav className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link
-            to="/home"
-            className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <Dumbbell className="w-8 h-8" />
-            <span className="text-2xl font-bold">FitForge</span>
-          </Link>
+    <>
+      {/* Top Navbar */}
+      <nav className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-1">
-            {navItems.map(item => (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActivePath(item.path)
-                    ? 'bg-white text-indigo-600 shadow-md'
-                    : 'hover:bg-indigo-700 hover:bg-opacity-50'
-                }`}
-                title={item.label}
-              >
-                <item.icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </Link>
-            ))}
-          </div>
+            {/* Logo */}
+            <Link to="/home" className="flex items-center space-x-2">
+              <Dumbbell className="w-8 h-8" />
+              <span className="text-2xl font-bold">FitForge</span>
+            </Link>
 
-          {/* Mobile Navigation */}
-          <div className="flex md:hidden space-x-1">
-            {navItems.map(item => (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  isActivePath(item.path)
-                    ? 'bg-white text-indigo-600'
-                    : 'hover:bg-indigo-700'
-                }`}
-                title={item.label}
-              >
-                <item.icon className="w-5 h-5" />
-              </Link>
-            ))}
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex space-x-1">
+              {navItems.map(item => (
+                <Link
+                  key={item.id}
+                  to={item.path}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActivePath(item.path)
+                      ? "bg-white text-indigo-600 shadow-md"
+                      : "hover:bg-indigo-700 hover:bg-opacity-50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Mobile Hamburger Menu */}
+            <button
+              className="md:hidden p-2"
+              onClick={() => setOpenMenu(true)}
+            >
+              <Menu className="w-7 h-7" />
+            </button>
           </div>
+        </div>
+      </nav>
+
+      {/* Mobile Sidebar Menu (Slide In) */}
+      <div
+        className={` ${
+          openMenu ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setOpenMenu(false)}
+      />
+
+      <div
+        className={`fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-50 transform transition-transform duration-300 ${
+          openMenu ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-4 py-4 border-b">
+          <h2 className="text-xl font-bold">Menu</h2>
+          <button onClick={() => setOpenMenu(false)}>
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-2">
+          {navItems.map(item => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center space-x-3 px-3 py-3 rounded-lg text-lg transition ${
+                isActivePath(item.path)
+                  ? "bg-indigo-600 text-white"
+                  : "hover:bg-gray-200"
+              }`}
+              onClick={() => setOpenMenu(false)}
+            >
+              <item.icon className="w-5 h-5" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Mobile Page Title */}
-      <div className="md:hidden border-t border-indigo-500 bg-indigo-700 px-4 py-2">
-        <p className="text-sm font-medium text-center">
-          {navItems.find(item => isActivePath(item.path))?.label || 'FitForge'}
-        </p>
-      </div>
-    </nav>
+      
+    </>
   );
 };
 

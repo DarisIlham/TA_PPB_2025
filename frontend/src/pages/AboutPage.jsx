@@ -138,10 +138,10 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 
         {/* Footer */}
         <div className="bg-gray-50 rounded-xl p-6 text-center text-sm text-gray-600">
-          <p>© 2024 FitForge. Built with dedication to your fitness journey.</p>
+          <p>© 2025 FitForge. TA Praktikum PPB 2025.</p>
           <div className="mt-2 space-x-4">
-            <button className="hover:text-indigo-600">Privacy Policy</button>
-            <button className="hover:text-indigo-600">Terms of Service</button>
+          
+            <button className="hover:text-indigo-600">By Daris Ilham</button>
           </div>
         </div>
       </div>
