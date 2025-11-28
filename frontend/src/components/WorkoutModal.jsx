@@ -95,6 +95,7 @@ const WorkoutModal = ({
   // State untuk loading dan error
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // Calculate total volume whenever exercises change
   const calculateTotalVolume = () => {

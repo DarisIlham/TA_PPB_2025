@@ -106,6 +106,8 @@ const GoalModal = ({
     onSave(goalData);
   };
 
+  
+
   const getMetricIcon = (metric) => {
     switch (metric) {
       case 'Strength':
@@ -177,8 +179,6 @@ const GoalModal = ({
                   <option value="Cardio">Cardio</option>
                   <option value="Endurance">Endurance</option>
                   <option value="Weight Loss">Weight Loss</option>
-                  <option value="Muscle Gain">Muscle Gain</option>
-                  <option value="Flexibility">Flexibility</option>
                   <option value="Other">Other</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">

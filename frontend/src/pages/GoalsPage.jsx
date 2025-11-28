@@ -18,6 +18,9 @@ import {
 import { useGoal } from "../hooks/useGoal";
 import GoalModal from "../components/GoalModal";
 import ScheduleModal from "../components/ScheduleModal";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { calculateProgress } from "../../utils/goalUtils";
 
 const GoalsPage = () => {
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -39,6 +42,13 @@ const GoalsPage = () => {
     deleteGoal,
     updateWeeklySchedule,
   } = useGoal();
+
+  const token = localStorage.getItem("token");
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
 
   const handleCreateGoal = async (goalData) => {
     try {
@@ -123,23 +133,25 @@ const GoalsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Goals & Planning</h1>
           <p className="text-gray-600 mt-1">
             Track your fitness goals and progress
           </p>
         </div>
-        <button
-          onClick={() => {
-            setGoalModalMode("create");
-            setShowGoalModal(true);
-          }}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2 shadow-md"
-        >
-          <Plus className="w-5 h-5" />
-          <span>New Goal</span>
-        </button>
+        <div className="">
+          <button
+            onClick={() => {
+              setGoalModalMode("create");
+              setShowGoalModal(true);
+            }}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2 shadow-md"
+          >
+            <Plus className="w-5 h-5" />
+            <span>New Goal</span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -209,7 +221,12 @@ const GoalsPage = () => {
         {activeGoals.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeGoals.map((goal) => {
-              const progress = Math.round((goal.current / goal.target) * 100);
+              const progress = calculateProgress(
+                goal.startValue,
+                goal.currentValue,
+                goal.targetValue,
+                goal.type
+              );
               const daysRemaining = Math.ceil(
                 (new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24)
               );
@@ -365,7 +382,7 @@ const GoalsPage = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
             const daySchedule = weeklySchedule.find((item) => item.day === day);
             const type = daySchedule?.type || "Rest";

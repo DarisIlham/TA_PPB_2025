@@ -35,7 +35,13 @@ const GoalDetailPage = () => {
   const [showProgressForm, setShowProgressForm] = useState(false);
   const [progressValue, setProgressValue] = useState('');
   const [progressNotes, setProgressNotes] = useState('');
-
+  
+      const token = localStorage.getItem("token");
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+        }
+      }, [token, navigate]);
   useEffect(() => {
     const foundGoal = goals.find(g => g.goal_id === parseInt(id));
     setGoal(foundGoal);
@@ -111,20 +117,7 @@ const GoalDetailPage = () => {
     );
   }
 
-  if (!goal) {
-    return (
-      <div className="text-center py-12">
-        <Target className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-600">Goal not found</h2>
-        <button 
-          onClick={() => navigate('/goals')}
-          className="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
-        >
-          Back to Goals
-        </button>
-      </div>
-    );
-  }
+
 
   const daysRemaining = getDaysRemaining(goal.deadline);
   const progressPercentage = getProgressPercentage();

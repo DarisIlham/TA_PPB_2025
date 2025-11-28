@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Home, User, Info, Dumbbell, Heart, BarChart3, Target, Plus, Search, Filter, Calendar, TrendingUp, Award, Clock, Activity, ChevronRight, Edit, Trash2, Save, X, Download } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useNavigate } from "react-router-dom";
 // About Page
   const AboutPage = () => {
     const [expandedFaq, setExpandedFaq] = useState(null);
+    const navigate = useNavigate();
+    const token = localStorage.getItem("token");
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate]);
 
     const faqs = [
       {

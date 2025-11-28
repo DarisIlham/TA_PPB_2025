@@ -24,6 +24,7 @@ import {
   Trash2,
   Download,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const ProfilePage = ({
   userProfile,
@@ -39,6 +40,13 @@ const ProfilePage = ({
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const navigate = useNavigate();
+    const token = localStorage.getItem("token");
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate]);
 
   // Initialize editedProfile when userProfile changes
   useEffect(() => {

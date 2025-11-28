@@ -35,6 +35,13 @@ const CardioListPage = ({
     refreshData,
     deleteCardioWorkout
   } = useCardio();
+  
+      const token = localStorage.getItem("token");
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+        }
+      }, [token, navigate]);
 
   // Filter and sort workouts
   const filteredWorkouts = cardioWorkouts

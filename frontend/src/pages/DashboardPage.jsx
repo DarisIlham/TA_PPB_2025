@@ -37,6 +37,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 const DashboardPage = ({
   userProfile,
@@ -54,6 +55,14 @@ const DashboardPage = ({
     combinedData: [],
     stats: {}
   });
+   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+    
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+        }
+      }, [token, navigate]);
 
   // Process data when workouts change
   useEffect(() => {

@@ -37,6 +37,7 @@ import {
 } from "recharts";
 import { useStrength } from "../hooks/useStrength";
 import { useCardio } from "../hooks/useCardio";
+import { useNavigate } from "react-router-dom";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Homepage = ({
@@ -48,6 +49,13 @@ const Homepage = ({
   const { strengthWorkouts, loading: strengthLoading, error: strengthError } = useStrength();
   const { cardioWorkouts, loading: cardioLoading, error: cardioError } = useCardio();
   const [currentUserProfile, setCurrentUserProfile] = useState(userProfile);
+  const navigate = useNavigate();
+    const token = localStorage.getItem("token");
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate]);
 
   // Fetch user profile data from backend
   useEffect(() => {

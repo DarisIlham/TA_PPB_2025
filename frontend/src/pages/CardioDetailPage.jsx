@@ -26,6 +26,13 @@ const CardioDetailPage = () => {
   const [error, setError] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState(null);
+  
+      const token = localStorage.getItem("token");
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+        }
+      }, [token, navigate]);
 
   // Fetch workout data
   useEffect(() => {

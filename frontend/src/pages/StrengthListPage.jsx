@@ -35,6 +35,13 @@ const StrengthListPage = ({
     refreshData,
     deleteStrengthWorkout
   } = useStrength();
+  
+      const token = localStorage.getItem("token");
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+        }
+      }, [token, navigate]);
 
   // Filter and sort workouts
   const filteredWorkouts = strengthWorkouts

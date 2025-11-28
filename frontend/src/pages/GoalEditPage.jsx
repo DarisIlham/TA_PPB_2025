@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import GoalModal from '../components/GoalModal';
 import { useGoal } from '../hooks/useGoal';
+import { useEffect } from 'react';
 
 const GoalEditPage = () => {
   const { id } = useParams();
@@ -11,6 +12,13 @@ const GoalEditPage = () => {
   const { goals, updateGoal } = useGoal();
   
   const goal = goals.find(g => g.goal_id === parseInt(id));
+  
+      const token = localStorage.getItem("token");
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+        }
+      }, [token, navigate]);
 
   const handleUpdateGoal = async (goalData) => {
     try {
