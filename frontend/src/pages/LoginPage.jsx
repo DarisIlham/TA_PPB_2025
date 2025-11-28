@@ -9,6 +9,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const handleSign = (e) => {
     e.preventDefault();
@@ -19,7 +20,7 @@ const LoginPage = () => {
 
     try {
       // Step 1: Login
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

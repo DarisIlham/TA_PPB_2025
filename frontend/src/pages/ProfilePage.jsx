@@ -38,6 +38,7 @@ const ProfilePage = ({
   const [editedProfile, setEditedProfile] = useState({});
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // Initialize editedProfile when userProfile changes
   useEffect(() => {
@@ -52,7 +53,7 @@ const ProfilePage = ({
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -114,7 +115,7 @@ const ProfilePage = ({
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:5000/api/profile', {
+      const response = await fetch(`${API_BASE_URL}/api/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

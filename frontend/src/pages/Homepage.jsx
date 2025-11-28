@@ -37,6 +37,7 @@ import {
 } from "recharts";
 import { useStrength } from "../hooks/useStrength";
 import { useCardio } from "../hooks/useCardio";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Homepage = ({
   userProfile,
@@ -55,7 +56,7 @@ const Homepage = ({
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -6,7 +6,7 @@ import back from "../img/return.png";
 
 const SignUpPage = ({ setUserProfile }) => {
   const navigate = useNavigate();
- 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -27,7 +27,7 @@ const SignUpPage = ({ setUserProfile }) => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
