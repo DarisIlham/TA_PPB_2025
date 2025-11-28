@@ -32,7 +32,7 @@ const GoalEditPage = () => {
   if (!goal) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-600">Goal not found</h2>
+        <h2 className="text-2xl font-bold text-gray-600">Load Editing Modal</h2>
       </div>
     );
   }
