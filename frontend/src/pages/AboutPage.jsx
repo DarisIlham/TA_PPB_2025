@@ -117,7 +117,7 @@ import { useNavigate } from "react-router-dom";
         </div>
 
         {/* Contact */}
-        <div className="bg-white rounded-xl shadow-md p-6">
+        {/* <div className="bg-white rounded-xl shadow-md p-6">
           <h2 className="text-2xl font-bold mb-4">Support & Feedback</h2>
           <p className="text-gray-700 mb-4">
             Have questions or suggestions? We'd love to hear from you!
@@ -142,7 +142,7 @@ import { useNavigate } from "react-router-dom";
               Send Feedback
             </button>
           </div>
-        </div>
+        </div> */}
 
         {/* Footer */}
         <div className="bg-gray-50 rounded-xl p-6 text-center text-sm text-gray-600">
