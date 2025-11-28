@@ -1,19 +1,19 @@
 // pages/GoalDetailPage.jsx
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Target, 
-  Calendar, 
-  TrendingUp, 
-  Award, 
-  Edit, 
-  Trash2, 
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Target,
+  Calendar,
+  TrendingUp,
+  Award,
+  Edit,
+  Trash2,
   Plus,
   BarChart3,
   Clock,
-  Flag
-} from 'lucide-react';
+  Flag,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -22,28 +22,28 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
-} from 'recharts';
-import { useGoal } from '../hooks/useGoal';
+  ResponsiveContainer,
+} from "recharts";
+import { useGoal } from "../hooks/useGoal";
 
 const GoalDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { goals, updateGoal, deleteGoal, addGoalProgress, loading } = useGoal();
-  
+
   const [goal, setGoal] = useState(null);
   const [showProgressForm, setShowProgressForm] = useState(false);
-  const [progressValue, setProgressValue] = useState('');
-  const [progressNotes, setProgressNotes] = useState('');
-  
-      const token = localStorage.getItem("token");
-      useEffect(() => {
-        if (!token) {
-          navigate("/");
-        }
-      }, [token, navigate]);
+  const [progressValue, setProgressValue] = useState("");
+  const [progressNotes, setProgressNotes] = useState("");
+
+  const token = localStorage.getItem("token");
   useEffect(() => {
-    const foundGoal = goals.find(g => g.goal_id === parseInt(id));
+    if (!token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
+  useEffect(() => {
+    const foundGoal = goals.find((g) => g.goal_id === parseInt(id));
     setGoal(foundGoal);
   }, [id, goals]);
 
@@ -55,72 +55,108 @@ const GoalDetailPage = () => {
       await addGoalProgress(goal.goal_id, {
         value: parseFloat(progressValue),
         notes: progressNotes,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
       });
-      
-      setProgressValue('');
-      setProgressNotes('');
+
+      setProgressValue("");
+      setProgressNotes("");
       setShowProgressForm(false);
     } catch (error) {
-      console.error('Failed to add progress:', error);
+      console.error("Failed to add progress:", error);
     }
   };
 
   const handleDeleteGoal = async () => {
-    if (window.confirm('Are you sure you want to delete this goal?')) {
+    if (window.confirm("Are you sure you want to delete this goal?")) {
       try {
         await deleteGoal(goal.goal_id);
-        navigate('/goals');
+        navigate("/goals");
       } catch (error) {
-        console.error('Failed to delete goal:', error);
+        console.error("Failed to delete goal:", error);
       }
     }
   };
 
   const handleMarkComplete = async () => {
     try {
-      await updateGoal(goal.goal_id, { 
-        status: 'completed',
-        current: goal.target // Set current to target when completed
+      await updateGoal(goal.goal_id, {
+        status: "completed",
+        current: goal.target, // Set current to target when completed
       });
     } catch (error) {
-      console.error('Failed to mark goal complete:', error);
+      console.error("Failed to mark goal complete:", error);
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const calculateProgress = (start, current, target, type) => {
+    const startVal = parseFloat(start || 0);
+    const currentVal = parseFloat(current || 0);
+    const targetVal = parseFloat(target || 0);
+
+    let percentage = 0;
+
+    if (type === "descending") {
+      // Logika Weight Loss/Debt Reduction
+      const totalToLose = startVal - targetVal;
+      const lostSoFar = startVal - currentVal;
+
+      if (totalToLose <= 0) {
+        return currentVal <= targetVal ? 100 : 0;
+      }
+      percentage = (lostSoFar / totalToLose) * 100;
+    } else {
+      // Logika Standar Gain
+      const totalToGain = targetVal - startVal;
+      const gainedSoFar = currentVal - startVal;
+
+      if (startVal === 0 && totalToGain > 0) {
+        percentage = (currentVal / targetVal) * 100;
+      } else if (totalToGain > 0) {
+        percentage = (gainedSoFar / totalToGain) * 100;
+      } else {
+        return currentVal >= targetVal ? 100 : 0;
+      }
+    }
+
+    return Math.min(100, Math.max(0, percentage));
   };
 
   const getDaysRemaining = (deadline) => {
-    const today = new Date();
-    const deadlineDate = new Date(deadline);
-    const diffTime = deadlineDate - today;
+    if (!deadline) return 0;
+    const now = new Date();
+    const dead = new Date(deadline);
+    const diffTime = dead.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.max(0, diffDays);
   };
 
-  const getProgressPercentage = () => {
-    if (!goal) return 0;
-    return Math.round((goal.current / goal.target) * 100);
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  if (loading && !goal) {
+  if (!goal) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading goal details...</div>
+      <div className="flex flex-col justify-center items-center h-64 space-y-4">
+        <div className="text-lg text-gray-500">Loading goal details...</div>
       </div>
     );
   }
 
-
-
   const daysRemaining = getDaysRemaining(goal.deadline);
-  const progressPercentage = getProgressPercentage();
+  const progressPercentage = calculateProgress(
+    goal.startValue,
+    goal.current,
+    goal.target,
+    goal.type
+  );
+
+  const isDescending = goal.type === 'descending';
+  // Gunakan warna merah/orange jika descending, hijau jika ascending
+  const progressColor = isDescending ? 'bg-orange-500' : 'bg-green-500';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -128,14 +164,16 @@ const GoalDetailPage = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/goals')}
+            onClick={() => navigate("/goals")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h1 className="text-3xl font-bold">{goal.name}</h1>
-            <p className="text-gray-600">{goal.metric} • {goal.description}</p>
+            <p className="text-gray-600">
+              {goal.metric} • {goal.description}
+            </p>
           </div>
         </div>
         <div className="flex space-x-2">
@@ -160,23 +198,42 @@ const GoalDetailPage = () => {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Progress Card */}
         <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-700">Progress</h3>
-            <TrendingUp className="w-5 h-5 text-green-600" />
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800">Progress</h3>
+              <p className="text-sm text-gray-500">
+                {isDescending
+                  ? "Total loss to target:"
+                  : "Total gain to target:"}{" "}
+                <span className="font-medium text-gray-700">
+                  {Math.abs(goal.target - goal.startValue)}{" "}
+                  {/* Gunakan unit jika ada, saya asumsikan metric adalah unit */}
+                  {goal.metric}
+                </span>
+              </p>
+            </div>
+            <div className="text-3xl font-bold text-green-600">
+              {Math.round(progressPercentage)}%
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {progressPercentage}%
-            </div>
-            <div className="text-sm text-gray-600">
-              {goal.current} / {goal.target} {goal.metric}
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-              <div
-                className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
+
+          <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+            <div
+              className={`h-4 rounded-full transition-all duration-500 ${progressColor}`}
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>
+              Start: <span className="font-semibold">{goal.startValue}</span>
+            </span>
+            <span className="font-bold text-lg text-gray-800">
+              {goal.current}
+            </span>
+            <span>
+              Target: <span className="font-semibold">{goal.target}</span>
+            </span>
           </div>
         </div>
 
@@ -191,7 +248,7 @@ const GoalDetailPage = () => {
               {daysRemaining}
             </div>
             <div className="text-sm text-gray-600">
-              {daysRemaining > 0 ? 'days remaining' : 'days overdue'}
+              {daysRemaining > 0 ? "days remaining" : "days overdue"}
             </div>
             <div className="text-xs text-gray-500 mt-1">
               {formatDate(goal.deadline)}
@@ -206,16 +263,18 @@ const GoalDetailPage = () => {
             <Flag className="w-5 h-5 text-orange-600" />
           </div>
           <div className="text-center">
-            <div className={`text-2xl font-bold mb-2 ${
-              goal.priority === 'High' ? 'text-red-600' :
-              goal.priority === 'Medium' ? 'text-yellow-600' :
-              'text-green-600'
-            }`}>
+            <div
+              className={`text-2xl font-bold mb-2 ${
+                goal.priority === "High"
+                  ? "text-red-600"
+                  : goal.priority === "Medium"
+                  ? "text-yellow-600"
+                  : "text-green-600"
+              }`}
+            >
               {goal.priority}
             </div>
-            <div className="text-sm text-gray-600">
-              Priority Level
-            </div>
+            <div className="text-sm text-gray-600">Priority Level</div>
           </div>
         </div>
       </div>
@@ -230,22 +289,22 @@ const GoalDetailPage = () => {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={goal.history}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tickFormatter={(date) => formatDate(date)}
               />
               <YAxis />
-              <Tooltip 
+              <Tooltip
                 labelFormatter={(date) => formatDate(date)}
-                formatter={(value) => [value, 'Value']}
+                formatter={(value) => [value, "Value"]}
               />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#8884d8" 
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#8884d8"
                 strokeWidth={2}
-                dot={{ fill: '#8884d8', strokeWidth: 2, r: 4 }}
+                dot={{ fill: "#8884d8", strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>
@@ -273,7 +332,10 @@ const GoalDetailPage = () => {
 
         {/* Add Progress Form */}
         {showProgressForm && (
-          <form onSubmit={handleAddProgress} className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <form
+            onSubmit={handleAddProgress}
+            className="mb-6 p-4 bg-gray-50 rounded-lg"
+          >
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -326,13 +388,18 @@ const GoalDetailPage = () => {
             [...goal.history]
               .sort((a, b) => new Date(b.date) - new Date(a.date))
               .map((entry, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                >
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                       <TrendingUp className="w-4 h-4 text-green-600" />
                     </div>
                     <div>
-                      <div className="font-semibold">{entry.value} {goal.metric}</div>
+                      <div className="font-semibold">
+                        {entry.value} {goal.metric}
+                      </div>
                       <div className="text-sm text-gray-500">
                         {formatDate(entry.date)}
                         {entry.notes && ` • ${entry.notes}`}
@@ -350,7 +417,7 @@ const GoalDetailPage = () => {
       </div>
 
       {/* Complete Goal Button */}
-      {goal.status === 'active' && progressPercentage >= 100 && (
+      {goal.status === "active" && progressPercentage >= 100 && (
         <div className="bg-white rounded-xl shadow-md p-6 text-center">
           <Award className="w-12 h-12 mx-auto text-green-600 mb-2" />
           <h3 className="text-lg font-semibold mb-2">Congratulations! 🎉</h3>

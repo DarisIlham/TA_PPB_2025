@@ -15,11 +15,29 @@ const LoginPage = () => {
     e.preventDefault();
     navigate("/sign");
   };
+
+  const validateInput = (value) => {
+    const dangerousChars = /['";<>\\]/g; 
+    return !dangerousChars.test(value);
+  };
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    if (validateInput(val)) {
+      setEmail(val);
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    const val = e.target.value;
+    // Password mungkin butuh karakter spesial, tapi jika ingin ketat sesuai request:
+    if (validateInput(val)) {
+      setPassword(val);
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Step 1: Login
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -35,29 +53,20 @@ const LoginPage = () => {
       }
 
       const data = await res.json();
-
-      // Store token and user data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-
       navigate("/home");
     } catch (error) {
       alert("Error connecting to server: " + error.message);
     }
   };
-  
 
- 
   return (
-    <div className="relative w-full h-screen"> 
-      {/* Form wrapper */}
+    <div className="relative w-full h-screen">
       <div className="absolute z-10 w-full flex min-h-screen justify-center">
         <div className="text-[16px] leading-[18px]">
           {/* Header */}
           <div className="text-[18px] mt-[44px] mb-[56px] justify-center grid place-items-center w-[375px] h-[64px] text-center font-semibold">
-            
-            
-            
             <p className="font-semibold text-[18px]">Login</p>
           </div>
 
@@ -68,19 +77,21 @@ const LoginPage = () => {
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                onChange={handleEmailChange}
+                // PERBAIKAN UI: h-full ditambahkan agar huruf y,g,j tidak terpotong
+                className="outline-none w-full h-full bg-transparent text-gray-800 placeholder-gray-500"
                 required
               />
             </div>
 
             <div className="flex mb-[40px] w-[343px] h-[56px] items-center border rounded-[16px] py-[8px] px-[16px] gap-[10px]">
               <input
-                type={showPassword ? "text" : "password"} // toggle input type
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                onChange={handlePasswordChange}
+                // PERBAIKAN UI: h-full ditambahkan
+                className="outline-none w-full h-full bg-transparent text-gray-800 placeholder-gray-500"
                 required
               />
               <span

@@ -223,10 +223,17 @@ const GoalsPage = () => {
             {activeGoals.map((goal) => {
               const progress = calculateProgress(
                 goal.startValue,
-                goal.currentValue,
-                goal.targetValue,
+                goal.current, // <--- PERBAIKAN DI SINI (sebelumnya currentValue)
+                goal.target, // <--- PERBAIKAN DI SINI (sebelumnya targetValue)
                 goal.type
               );
+              // 2. LOGIKA WARNA & TIPE
+              const isDescending = goal.type === "descending";
+              const progressColor = isDescending
+                ? "bg-orange-500"
+                : "bg-green-500";
+
+              // 3. LOGIKA DEADLINE
               const daysRemaining = Math.ceil(
                 (new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24)
               );
@@ -278,16 +285,27 @@ const GoalsPage = () => {
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-gray-600">Progress</span>
-                      <span className="font-semibold">{progress}%</span>
+                      <span className="font-semibold">
+                        {Math.round(progress)}%
+                      </span>
                     </div>
+
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                        className={`h-2 rounded-full transition-all duration-300 ${progressColor}`}
                         style={{ width: `${progress}%` }}
                       />
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {goal.current} / {goal.target} {goal.metric}
+
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>
+                        {goal.current} / {goal.target} {goal.metric}
+                      </span>
+                      {isDescending && (
+                        <span className="text-orange-600 font-medium text-[10px] bg-orange-50 px-1 rounded">
+                          Target Loss
+                        </span>
+                      )}
                     </div>
                   </div>
 

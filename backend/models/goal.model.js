@@ -34,39 +34,31 @@ const historySchema = new Schema({
 // Schema untuk goals
 const goalSchema = new Schema(
   {
-    goal_id: {
-      type: Number,
-      unique: true
-    },
-    user_id: {
-      type: Number,
-      required: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    goal_id: { type: Number, unique: true },
+    user_id: { type: Number, required: true },
+    name: { type: String, required: true, trim: true },
     metric: {
       type: String,
       required: true,
       enum: ['Strength', 'Cardio', 'Endurance', 'Weight Loss', 'Muscle Gain', 'Flexibility', 'Other']
     },
-    target: {
-      type: Number,
+    // FIELD BARU: Tipe Goal (Naik/Turun)
+    type: {
+      type: String,
       required: true,
-      min: 0
+      enum: ['ascending', 'descending'],
+      default: 'ascending'
     },
-    current: {
+    // FIELD BARU: Nilai Awal
+    startValue: {
       type: Number,
       required: true,
       min: 0,
       default: 0
     },
-    deadline: {
-      type: Date,
-      required: true
-    },
+    target: { type: Number, required: true, min: 0 },
+    current: { type: Number, required: true, min: 0, default: 0 },
+    deadline: { type: Date, required: true },
     priority: {
       type: String,
       required: true,
@@ -79,26 +71,16 @@ const goalSchema = new Schema(
       enum: ['active', 'completed', 'failed', 'paused'],
       default: 'active'
     },
-    description: {
-      type: String,
-      default: ""
-    },
+    description: { type: String, default: "" },
     history: [historySchema],
-    progress: {
-      type: Number,
-      min: 0,
-      max: 100,
-      default: 0
-    },
+    progress: { type: Number, min: 0, max: 100, default: 0 },
     category: {
       type: String,
       enum: ['fitness', 'nutrition', 'lifestyle', 'sports'],
       default: 'fitness'
     }
   },
-  {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-  }
+  { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );
 
 // Schema untuk weekly schedule - HAPUS schedule_id
@@ -197,14 +179,44 @@ goalSchema.pre('save', async function (next) {
 
 // Calculate progress percentage before saving
 goalSchema.pre('save', function (next) {
-  if (this.target > 0) {
-    this.progress = Math.min(100, Math.round((this.current / this.target) * 100));
+  const start = this.startValue || 0;
+  const current = this.current;
+  const target = this.target;
+  const type = this.type || 'ascending';
+  
+  let percentage = 0;
+
+  if (type === 'descending') {
+    // Logika Weight Loss (Makin kecil makin baik)
+    const totalToLose = start - target;
+    const lostSoFar = start - current;
+    
+    // Cegah pembagian nol atau logika aneh
+    if (totalToLose <= 0) {
+       percentage = (current <= target) ? 100 : 0;
+    } else {
+       percentage = (lostSoFar / totalToLose) * 100;
+    }
   } else {
-    this.progress = 0;
+    // Logika Ascending (Default)
+    const totalToGain = target - start;
+    const gainedSoFar = current - start;
+    
+    if (start === 0 && totalToGain > 0) {
+       // Jika start 0, hitung simple
+       percentage = (current / target) * 100;
+    } else if (totalToGain > 0) {
+       percentage = (gainedSoFar / totalToGain) * 100;
+    } else {
+       percentage = (current >= target) ? 100 : 0;
+    }
   }
+
+  // Pastikan range 0 - 100
+  this.progress = Math.min(100, Math.max(0, Math.round(percentage)));
   next();
 });
 
 export const Goal = mongoose.model("Goal", goalSchema);
-export const WeeklySchedule = mongoose.model("WeeklySchedule", weeklyScheduleSchema);
-export const RecommendedSchedule = mongoose.model("RecommendedSchedule", recommendedScheduleSchema);
+export const WeeklySchedule = mongoose.model("WeeklySchedule", weeklyScheduleSchema); // Pastikan variable weeklyScheduleSchema tersedia di file asli
+export const RecommendedSchedule = mongoose.model("RecommendedSchedule", recommendedScheduleSchema); // Pastikan variable tersedia

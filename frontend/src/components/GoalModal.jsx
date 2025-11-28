@@ -1,5 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Calendar, Target, TrendingUp, Award, Clock } from 'lucide-react';
+import { X, Save, Calendar, Target, TrendingUp, Award, Clock, TrendingDown } from 'lucide-react';
+
+// =======================================================
+// HELPER FUNCTION: Logic untuk menghitung persentase dinamis
+// =======================================================
+const calculateProgress = (start, current, target, type) => {
+  const startVal = parseFloat(start || 0);
+  const currentVal = parseFloat(current || 0);
+  const targetVal = parseFloat(target || 0);
+
+  let percentage = 0;
+
+  if (type === 'descending') {
+    // Logika Weight Loss/Debt Reduction (Makin kecil makin baik)
+    // Rumus: (Awal - Sekarang) / (Awal - Target) * 100
+    const totalToLose = startVal - targetVal;
+    const lostSoFar = startVal - currentVal;
+    
+    // Jika target sudah tercapai atau range mustahil (target >= start)
+    if (totalToLose <= 0) {
+      return currentVal <= targetVal ? 100 : 0;
+    }
+    
+    percentage = (lostSoFar / totalToLose) * 100;
+  } else {
+    // Logika Standar Gain (Makin besar makin baik)
+    // Rumus: (Sekarang - Awal) / (Target - Awal) * 100
+    const totalToGain = targetVal - startVal;
+    const gainedSoFar = currentVal - startVal;
+    
+    if (startVal === 0 && totalToGain > 0) {
+        // Jika mulai dari nol, hitung simple current/target
+        percentage = (currentVal / targetVal) * 100;
+    } else if (totalToGain > 0) {
+        percentage = (gainedSoFar / totalToGain) * 100;
+    } else {
+       // Target sudah tercapai atau range mustahil (target <= start)
+       return currentVal >= targetVal ? 100 : 0;
+    }
+  }
+
+  // Pastikan hasil di antara 0% - 100%
+  return Math.min(100, Math.max(0, percentage));
+};
+
 
 const GoalModal = ({ 
   isOpen, 
@@ -13,6 +57,8 @@ const GoalModal = ({
     metric: 'Strength',
     target: '',
     current: '',
+    startValue: '', // NEW: Nilai awal untuk menghitung progres penurunan
+    type: 'ascending', // NEW: 'ascending' (naik) atau 'descending' (turun)
     deadline: '',
     priority: 'Medium',
     description: '',
@@ -29,6 +75,8 @@ const GoalModal = ({
         metric: goal.metric || 'Strength',
         target: goal.target?.toString() || '',
         current: goal.current?.toString() || '',
+        startValue: goal.startValue?.toString() || '', // LOAD startValue
+        type: goal.type || 'ascending', // LOAD type
         deadline: goal.deadline ? new Date(goal.deadline).toISOString().split('T')[0] : '',
         priority: goal.priority || 'Medium',
         description: goal.description || '',
@@ -40,6 +88,8 @@ const GoalModal = ({
         metric: 'Strength',
         target: '',
         current: '',
+        startValue: '', // SET default
+        type: 'ascending', // SET default
         deadline: '',
         priority: 'Medium',
         description: '',
@@ -66,17 +116,33 @@ const GoalModal = ({
 
   const validateForm = () => {
     const newErrors = {};
+    const startVal = parseFloat(formData.startValue);
+    const targetVal = parseFloat(formData.target);
+    const currentVal = parseFloat(formData.current);
 
     if (!formData.name.trim()) {
       newErrors.name = 'Goal name is required';
     }
 
-    if (!formData.target || parseFloat(formData.target) <= 0) {
+    if (!formData.target || targetVal <= 0) {
       newErrors.target = 'Target must be greater than 0';
     }
 
-    if (formData.current && parseFloat(formData.current) < 0) {
+    // NEW: Validate Start Value
+    if (!formData.startValue || startVal < 0) {
+       newErrors.startValue = 'Start value is required and must be non-negative';
+    }
+
+    if (formData.current && currentVal < 0) {
       newErrors.current = 'Current value cannot be negative';
+    }
+
+    // NEW: Simple Logic check (UX enhancement)
+    if (formData.type === 'ascending' && startVal >= targetVal) {
+        newErrors.target = 'Target must be higher than Start Value for Increase goals';
+    }
+    if (formData.type === 'descending' && startVal <= targetVal) {
+        newErrors.target = 'Target must be lower than Start Value for Decrease goals';
     }
 
     if (!formData.deadline) {
@@ -100,14 +166,13 @@ const GoalModal = ({
       ...formData,
       target: parseFloat(formData.target),
       current: parseFloat(formData.current) || 0,
+      startValue: parseFloat(formData.startValue) || 0, // SAVE startValue
       deadline: new Date(formData.deadline).toISOString()
     };
 
     onSave(goalData);
   };
-
   
-
   const getMetricIcon = (metric) => {
     switch (metric) {
       case 'Strength':
@@ -202,28 +267,68 @@ const GoalModal = ({
               </select>
             </div>
           </div>
+          
+          {/* NEW: Goal Type Selector */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">Goal Type *</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <label className={`flex-1 cursor-pointer border rounded-lg p-3 flex items-center justify-center gap-2 transition-all ${
+                formData.type === 'ascending' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-300 hover:bg-gray-50'
+              }`}>
+                <input
+                  type="radio"
+                  name="type"
+                  value="ascending"
+                  checked={formData.type === 'ascending'}
+                  onChange={(e) => handleChange('type', e.target.value)}
+                  className="hidden"
+                />
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-sm font-medium">Increase (Strength, Savings)</span>
+              </label>
 
-          {/* Target and Current Values */}
-          <div className="grid md:grid-cols-2 gap-4">
+              <label className={`flex-1 cursor-pointer border rounded-lg p-3 flex items-center justify-center gap-2 transition-all ${
+                formData.type === 'descending' ? 'bg-red-50 border-red-500 text-red-700' : 'border-gray-300 hover:bg-gray-50'
+              }`}>
+                <input
+                  type="radio"
+                  name="type"
+                  value="descending"
+                  checked={formData.type === 'descending'}
+                  onChange={(e) => handleChange('type', e.target.value)}
+                  className="hidden"
+                />
+                <TrendingDown className="w-4 h-4" />
+                <span className="text-sm font-medium">Decrease (Weight Loss, Debt)</span>
+              </label>
+            </div>
+          </div>
+
+
+          {/* Start, Current and Target Values (Updated to grid-cols-3) */}
+          <div className="grid grid-cols-3 gap-4">
+            
+            {/* NEW: Start Value */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Target Value *
+                Start Value *
               </label>
               <input
                 type="number"
-                value={formData.target}
-                onChange={(e) => handleChange('target', e.target.value)}
-                placeholder="e.g., 100, 50, 150"
+                value={formData.startValue}
+                onChange={(e) => handleChange('startValue', e.target.value)}
+                placeholder="e.g., 90"
                 step="0.1"
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.target ? 'border-red-500' : 'border-gray-300'
+                  errors.startValue ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.target && (
-                <p className="mt-1 text-sm text-red-600">{errors.target}</p>
+              {errors.startValue && (
+                <p className="mt-1 text-sm text-red-600">{errors.startValue}</p>
               )}
             </div>
-
+            
+            {/* Current Value */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Current Value
@@ -232,7 +337,7 @@ const GoalModal = ({
                 type="number"
                 value={formData.current}
                 onChange={(e) => handleChange('current', e.target.value)}
-                placeholder="e.g., 80, 8, 100"
+                placeholder="e.g., 85"
                 step="0.1"
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                   errors.current ? 'border-red-500' : 'border-gray-300'
@@ -240,6 +345,26 @@ const GoalModal = ({
               />
               {errors.current && (
                 <p className="mt-1 text-sm text-red-600">{errors.current}</p>
+              )}
+            </div>
+            
+            {/* Target Value */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Value *
+              </label>
+              <input
+                type="number"
+                value={formData.target}
+                onChange={(e) => handleChange('target', e.target.value)}
+                placeholder="e.g., 70"
+                step="0.1"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  errors.target ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.target && (
+                <p className="mt-1 text-sm text-red-600">{errors.target}</p>
               )}
             </div>
           </div>
@@ -298,26 +423,46 @@ const GoalModal = ({
             </div>
           )}
 
-          {/* Progress Preview */}
-          {formData.target && formData.current && (
+          {/* NEW: Progress Preview with dynamic calculation */}
+          {formData.startValue && formData.target && (
             <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-gray-600">Progress Preview</span>
-                <span className="font-semibold">
-                  {Math.round((parseFloat(formData.current) / parseFloat(formData.target)) * 100)}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.min(100, (parseFloat(formData.current) / parseFloat(formData.target)) * 100)}%`
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Current: {formData.current} / Target: {formData.target}
-              </p>
+              {(() => {
+                const start = formData.startValue;
+                // Gunakan start value sebagai current value jika current masih kosong
+                const current = formData.current || formData.startValue; 
+                const target = formData.target;
+                const type = formData.type;
+                
+                const progressPercent = calculateProgress(start, current, target, type);
+                const isDescending = type === 'descending';
+                const progressColor = isDescending ? 'bg-red-500' : 'bg-green-500';
+
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-gray-600">
+                        Progress Preview ({isDescending ? 'Decrease Goal' : 'Increase Goal'})
+                      </span>
+                      <span className="font-semibold text-lg">
+                        {Math.round(progressPercent)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${progressColor}`}
+                        style={{
+                          width: `${progressPercent}%`
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 flex justify-between">
+                      <span>Start: {start}</span>
+                      <span className="font-medium text-gray-700">Current: {current}</span>
+                      <span>Target: {target}</span>
+                    </p>
+                  </>
+                );
+              })()}
             </div>
           )}
 

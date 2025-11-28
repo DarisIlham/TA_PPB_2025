@@ -527,12 +527,12 @@ const StrengthDetailPage = () => {
           >
             Edit Workout
           </button>
-          <button
+          {/* <button
             onClick={handleExportPDF}
             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             Export as PDF
-          </button>
+          </button> */}
         </div>
       </div>
 

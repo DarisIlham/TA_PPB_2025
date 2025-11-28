@@ -12,7 +12,17 @@ const validateGoal = [
     .withMessage("Metric is required")
     .isIn(['Strength', 'Cardio', 'Endurance', 'Weight Loss', 'Muscle Gain', 'Flexibility', 'Other'])
     .withMessage("Invalid metric"),
+  body("type")
+    .optional()
+    .isIn(['ascending', 'descending'])
+    .withMessage("Type must be ascending or descending"),
 
+  // VALIDASI BARU
+  body("startValue")
+    .optional() // Optional karena mungkin user lama tidak punya ini, tapi disarankan diisi
+    .isFloat({ min: 0 })
+    .withMessage("Start value must be a number greater than or equal to 0"),
+    
   body("target")
     .isFloat({ min: 0 })
     .withMessage("Target must be a number greater than or equal to 0"),

@@ -17,13 +17,33 @@ const SignUpPage = ({ setUserProfile }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    let isValid = true;
+
+    // Regex untuk memblokir karakter berbahaya (Injection prevention)
+    const dangerousChars = /['";<>\\]/g;
+    
+    // Regex khusus untuk Nama (Hanya huruf dan spasi)
+    const nameRegex = /^[a-zA-Z\s]*$/;
+
+    if (dangerousChars.test(value)) {
+      isValid = false;
+    }
+
+    // Validasi tambahan khusus kolom Nama
+    if (name === "name" && !nameRegex.test(value)) {
+      isValid = false;
+    }
+
+    if (isValid) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
@@ -36,19 +56,6 @@ const SignUpPage = ({ setUserProfile }) => {
       });
 
       if (res.ok) {
-        // Set user profile di context dan local state setelah signup berhasil
-        const newUserProfile = {
-          name: formData.name,
-          email: formData.email,
-          age: 0,
-          weight: 0,
-          height: 0,
-          unit: "kg",
-          distanceUnit: "km"
-        };
-        
-        
-        // Redirect setelah success
         navigate("/");
       } else {
         const errorData = await res.json();
@@ -88,7 +95,8 @@ const SignUpPage = ({ setUserProfile }) => {
                 placeholder="Name"
                 value={formData.name}
                 onChange={handleChange}
-                className="my-1 outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                // PERBAIKAN UI: h-full
+                className="my-1 outline-none w-full h-full bg-transparent text-gray-800 placeholder-gray-500"
                 required
               />
             </div>
@@ -100,7 +108,8 @@ const SignUpPage = ({ setUserProfile }) => {
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
-                className="outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                // PERBAIKAN UI: h-full
+                className="outline-none w-full h-full bg-transparent text-gray-800 placeholder-gray-500"
                 required
               />
             </div>
@@ -112,7 +121,8 @@ const SignUpPage = ({ setUserProfile }) => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className="outline-none w-full bg-transparent text-gray-800 placeholder-gray-500"
+                // PERBAIKAN UI: h-full
+                className="outline-none w-full h-full bg-transparent text-gray-800 placeholder-gray-500"
                 required
               />
               <span className="mr-2 text-2xl cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
