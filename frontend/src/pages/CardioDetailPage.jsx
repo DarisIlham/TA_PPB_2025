@@ -1,38 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Activity, 
-  Calendar, 
-  Clock, 
-  TrendingUp, 
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  Activity,
+  Calendar,
+  Clock,
+  TrendingUp,
   Award,
   Edit,
   Trash2,
   Loader,
   AlertCircle,
   BarChart3,
-  MapPin
-} from 'lucide-react';
-import { fetchWithAuth } from '../../utils/api';
-import WorkoutModal from '../components/WorkoutModal'; // Import WorkoutModal instead of CardioModal
+  MapPin,
+} from "lucide-react";
+import { fetchWithAuth } from "../../utils/api";
+import WorkoutModal from "../components/WorkoutModal"; // Import WorkoutModal instead of CardioModal
 
 const CardioDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [workout, setWorkout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState(null);
-  
-      const token = localStorage.getItem("token");
-      useEffect(() => {
-        if (!token) {
-          navigate("/");
-        }
-      }, [token, navigate]);
+
+  const token = localStorage.getItem("token");
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
 
   // Fetch workout data
   useEffect(() => {
@@ -40,19 +40,19 @@ const CardioDetailPage = () => {
       try {
         setLoading(true);
         setError(null);
-        console.log('Fetching cardio workout with ID:', id);
-        
+        console.log("Fetching cardio workout with ID:", id);
+
         const workoutData = await fetchWithAuth(`/cardio/${id}`);
-        console.log('Cardio workout data received:', workoutData);
-        
+        console.log("Cardio workout data received:", workoutData);
+
         if (workoutData) {
           setWorkout(workoutData);
         } else {
-          setError('Cardio workout not found');
+          setError("Cardio workout not found");
         }
       } catch (err) {
-        console.error('Error loading cardio workout:', err);
-        setError(err.message || 'Failed to load cardio workout data');
+        console.error("Error loading cardio workout:", err);
+        setError(err.message || "Failed to load cardio workout data");
       } finally {
         setLoading(false);
       }
@@ -65,15 +65,19 @@ const CardioDetailPage = () => {
 
   // Handle delete workout
   const handleDeleteWorkout = async () => {
-    if (window.confirm('Are you sure you want to delete this cardio workout? This action cannot be undone.')) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this cardio workout? This action cannot be undone."
+      )
+    ) {
       try {
         setLoading(true);
         await fetchWithAuth(`/cardio/${id}`, {
-          method: 'DELETE'
+          method: "DELETE",
         });
-        navigate('/cardio');
+        navigate("/cardio");
       } catch (err) {
-        alert('Failed to delete cardio workout: ' + err.message);
+        alert("Failed to delete cardio workout: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -83,7 +87,7 @@ const CardioDetailPage = () => {
   // Handle edit workout - FIXED
   const handleEditWorkout = () => {
     if (workout) {
-      console.log('Editing workout:', workout);
+      console.log("Editing workout:", workout);
       setEditingWorkout(workout);
       setShowEditModal(true);
     }
@@ -100,7 +104,7 @@ const CardioDetailPage = () => {
         const workoutData = await fetchWithAuth(`/cardio/${id}`);
         setWorkout(workoutData);
       } catch (err) {
-        console.error('Error refreshing workout data:', err);
+        console.error("Error refreshing workout data:", err);
       } finally {
         setLoading(false);
       }
@@ -116,10 +120,10 @@ const CardioDetailPage = () => {
 
   const handleExportPDF = () => {
     if (!workout) return;
-    
-    const printWindow = window.open('', '_blank');
+
+    const printWindow = window.open("", "_blank");
     const workoutDate = new Date(workout.date).toLocaleDateString();
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -152,11 +156,11 @@ const CardioDetailPage = () => {
             </div>
             <div class="metric">
               <strong>Pace</strong><br>
-              ${workout.pace || 'N/A'}
+              ${workout.pace || "N/A"}
             </div>
             <div class="metric">
               <strong>Calories</strong><br>
-              ${workout.calories || 'N/A'}
+              ${workout.calories || "N/A"}
             </div>
           </div>
 
@@ -173,29 +177,47 @@ const CardioDetailPage = () => {
               </tr>
               <tr>
                 <th>Duration</th>
-                <td>${Math.floor(workout.duration / 60)}h ${workout.duration % 60}m</td>
+                <td>${Math.floor(workout.duration / 60)}h ${
+      workout.duration % 60
+    }m</td>
               </tr>
-              ${workout.pace ? `<tr><th>Pace</th><td>${workout.pace}</td></tr>` : ''}
-              ${workout.calories ? `<tr><th>Calories</th><td>${workout.calories} cal</td></tr>` : ''}
-              ${workout.location ? `<tr><th>Location</th><td>${workout.location}</td></tr>` : ''}
-              ${workout.notes ? `<tr><th>Notes</th><td>${workout.notes}</td></tr>` : ''}
+              ${
+                workout.pace
+                  ? `<tr><th>Pace</th><td>${workout.pace}</td></tr>`
+                  : ""
+              }
+              ${
+                workout.calories
+                  ? `<tr><th>Calories</th><td>${workout.calories} cal</td></tr>`
+                  : ""
+              }
+              ${
+                workout.location
+                  ? `<tr><th>Location</th><td>${workout.location}</td></tr>`
+                  : ""
+              }
+              ${
+                workout.notes
+                  ? `<tr><th>Notes</th><td>${workout.notes}</td></tr>`
+                  : ""
+              }
             </table>
           </div>
         </body>
       </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.print();
   };
 
   // Format date
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -222,7 +244,9 @@ const CardioDetailPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Loading cardio workout details...</p>
+          <p className="text-gray-600 text-lg">
+            Loading cardio workout details...
+          </p>
         </div>
       </div>
     );
@@ -235,14 +259,14 @@ const CardioDetailPage = () => {
         <div className="text-center max-w-md">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            {error ? 'Error Loading Workout' : 'Workout Not Found'}
+            {error ? "Error Loading Workout" : "Workout Not Found"}
           </h2>
           <p className="text-gray-600 mb-6">
-            {error || 'The cardio workout you are looking for does not exist.'}
+            {error || "The cardio workout you are looking for does not exist."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => navigate('/cardio')}
+              onClick={() => navigate("/cardio")}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Back to Cardio
@@ -260,7 +284,7 @@ const CardioDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 pb-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -274,7 +298,7 @@ const CardioDetailPage = () => {
                 Back to Cardio
               </Link>
             </div>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={handleEditWorkout}
@@ -296,22 +320,30 @@ const CardioDetailPage = () => {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-100 p-3 rounded-xl">
-                  <Activity className="w-8 h-8 text-blue-600" />
+            {/* Wrapper utama responsif */}
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-0">
+              {/* Left Section */}
+              <div className="flex items-start space-x-4">
+                <div className="bg-blue-100 p-2.5 md:p-3 rounded-xl">
+                  <Activity className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
                 </div>
+
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 capitalize">{workout.type}</h1>
-                  <div className="flex items-center space-x-4 mt-2 text-gray-600">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 capitalize">
+                    {workout.type}
+                  </h1>
+
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-gray-600 text-sm md:text-base">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(workout.date)}</span>
                     </div>
+
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
                       <span>{formatDuration(workout.duration)}</span>
                     </div>
+
                     {workout.location && (
                       <div className="flex items-center space-x-1">
                         <MapPin className="w-4 h-4" />
@@ -321,21 +353,29 @@ const CardioDetailPage = () => {
                   </div>
                 </div>
               </div>
-              
-              <div className="text-right">
-                <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white px-4 py-3 rounded-lg">
-                  <div className="text-sm font-medium opacity-90">Distance</div>
-                  <div className="text-2xl font-bold">
+
+              {/* Right Section — Distance */}
+              <div className="md:text-right">
+                <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white px-4 py-3 rounded-lg text-center md:text-right">
+                  <div className="text-xs md:text-sm font-medium opacity-90">
+                    Distance
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold">
                     {workout.distance} km
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Notes */}
             {workout.notes && (
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">Notes</h3>
-                <p className="text-blue-800">{workout.notes}</p>
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                  Notes
+                </h3>
+                <p className="text-blue-800 text-sm md:text-base">
+                  {workout.notes}
+                </p>
               </div>
             )}
           </div>
@@ -354,42 +394,62 @@ const CardioDetailPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-gray-600 font-medium">Activity Type</span>
-                  <span className="font-semibold text-gray-900 capitalize">{workout.type}</span>
+                  <span className="text-gray-600 font-medium">
+                    Activity Type
+                  </span>
+                  <span className="font-semibold text-gray-900 capitalize">
+                    {workout.type}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-gray-600 font-medium">Distance</span>
-                  <span className="font-semibold text-blue-600">{workout.distance} km</span>
+                  <span className="font-semibold text-blue-600">
+                    {workout.distance} km
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-gray-600 font-medium">Duration</span>
-                  <span className="font-semibold text-gray-900">{formatDuration(workout.duration)}</span>
+                  <span className="font-semibold text-gray-900">
+                    {formatDuration(workout.duration)}
+                  </span>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 {workout.pace && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600 font-medium">Pace</span>
-                    <span className="font-semibold text-green-600">{workout.pace}</span>
+                    <span className="font-semibold text-green-600">
+                      {workout.pace}
+                    </span>
                   </div>
                 )}
                 {workout.calories && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600 font-medium">Calories Burned</span>
-                    <span className="font-semibold text-orange-600">{workout.calories} cal</span>
+                    <span className="text-gray-600 font-medium">
+                      Calories Burned
+                    </span>
+                    <span className="font-semibold text-orange-600">
+                      {workout.calories} cal
+                    </span>
                   </div>
                 )}
                 {workout.location && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600 font-medium">Location</span>
-                    <span className="font-semibold text-gray-900">{workout.location}</span>
+                    <span className="font-semibold text-gray-900">
+                      {workout.location}
+                    </span>
                   </div>
                 )}
                 {calculateSpeed() && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600 font-medium">Average Speed</span>
-                    <span className="font-semibold text-purple-600">{calculateSpeed()} km/h</span>
+                    <span className="text-gray-600 font-medium">
+                      Average Speed
+                    </span>
+                    <span className="font-semibold text-purple-600">
+                      {calculateSpeed()} km/h
+                    </span>
                   </div>
                 )}
               </div>
@@ -415,7 +475,9 @@ const CardioDetailPage = () => {
               {workout.pace && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Average Pace</span>
-                  <span className="font-semibold text-green-600">{workout.pace}</span>
+                  <span className="font-semibold text-green-600">
+                    {workout.pace}
+                  </span>
                 </div>
               )}
             </div>
@@ -456,19 +518,24 @@ const CardioDetailPage = () => {
                 <>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Calories Burned</span>
-                    <span className="font-semibold text-orange-600">{workout.calories} cal</span>
+                    <span className="font-semibold text-orange-600">
+                      {workout.calories} cal
+                    </span>
                   </div>
                   {workout.duration > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Calories/Hour</span>
                       <span className="font-semibold text-gray-900">
-                        {Math.round((workout.calories / workout.duration) * 60)} cal/h
+                        {Math.round((workout.calories / workout.duration) * 60)}{" "}
+                        cal/h
                       </span>
                     </div>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-gray-500">No calorie data available</p>
+                <p className="text-sm text-gray-500">
+                  No calorie data available
+                </p>
               )}
             </div>
           </div>
@@ -477,7 +544,7 @@ const CardioDetailPage = () => {
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
           <button
-            onClick={() => navigate('/cardio')}
+            onClick={() => navigate("/cardio")}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Back to Cardio

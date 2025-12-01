@@ -159,7 +159,7 @@ const GoalDetailPage = () => {
   const progressColor = isDescending ? 'bg-orange-500' : 'bg-green-500';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

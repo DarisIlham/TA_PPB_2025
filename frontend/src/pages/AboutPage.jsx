@@ -29,7 +29,7 @@ import { useNavigate } from "react-router-dom";
     ];
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-10">
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl p-8 shadow-lg">
           <div className="flex items-center space-x-4 mb-4">
             <Dumbbell className="w-12 h-12" />
